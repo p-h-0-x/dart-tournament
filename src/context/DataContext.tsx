@@ -20,7 +20,7 @@ const DataContext = createContext<DataContextType>({
   getPlayer: () => undefined,
 });
 
-function computeLeaderboard(players: Player[], games: Game[], tournaments: Tournament[]): LeaderboardEntry[] {
+export function computeLeaderboard(players: Player[], games: Game[], tournaments: Tournament[]): LeaderboardEntry[] {
   const completedGames = games.filter((g) => g.status === 'completed');
 
   return players.map((player) => {

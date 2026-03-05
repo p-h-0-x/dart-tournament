@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -7,4 +8,10 @@ export default defineConfig({
   // For GitHub Pages deployment, set base to the repo name
   // Change 'dart-tournament' to your actual repo name if different
   base: '/dart-tournament/',
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    css: false,
+  },
 })
