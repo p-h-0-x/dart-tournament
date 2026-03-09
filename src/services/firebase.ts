@@ -2,16 +2,13 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// Firebase configuration - users must replace with their own config
-// To set up: create a Firebase project at https://console.firebase.google.com
-// Enable Authentication (Email/Password) and Firestore Database
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
+  apiKey: 'AIzaSyAoClQntINK1Ed1LHAUnZ3U36x4Gssnu00',
+  authDomain: 'dart-tournament-53648.firebaseapp.com',
+  projectId: 'dart-tournament-53648',
+  storageBucket: 'dart-tournament-53648.firebasestorage.app',
+  messagingSenderId: '426845479054',
+  appId: '1:426845479054:web:8e8608eee7612eecae69df',
 };
 
 const app = initializeApp(firebaseConfig);
