@@ -18,8 +18,29 @@ export default function PlayerDetailPage() {
 
   const playerGames = games.filter((g) => g.status === 'completed' && g.playerIds.includes(player.id));
   const playerTournaments = tournaments.filter((t) => t.playerIds.includes(player.id));
-  const wins = playerGames.filter((g) => g.results.some((r) => r.playerId === player.id && r.rank === 1)).length;
-  const losses = playerGames.length - wins;
+
+  // Collect game IDs linked to tournament matches to avoid double-counting
+  const tournamentGameIds = new Set<string>();
+  for (const t of tournaments) {
+    for (const m of t.matches) {
+      if (m.gameId) tournamentGameIds.add(m.gameId);
+    }
+  }
+
+  // Wins/losses from standalone games
+  const standaloneGames = playerGames.filter((g) => !tournamentGameIds.has(g.id));
+  let wins = standaloneGames.filter((g) => g.results.some((r) => r.playerId === player.id && r.rank === 1)).length;
+  let losses = standaloneGames.length - wins;
+
+  // Wins/losses from tournament matches
+  for (const t of tournaments) {
+    for (const m of t.matches) {
+      if (m.status !== 'completed' || !m.winnerId || m.playerIds.length < 2 || !m.playerIds.includes(player.id)) continue;
+      if (m.winnerId === player.id) wins++;
+      else losses++;
+    }
+  }
+
   const tournamentsWon = tournaments.filter((t) => t.championId === player.id).length;
 
   // Head-to-head records
