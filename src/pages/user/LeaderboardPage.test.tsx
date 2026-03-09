@@ -132,8 +132,8 @@ describe('LeaderboardPage', () => {
 
     // Total Players = 2
     expect(statCards[0].querySelector('.stat-value')!.textContent).toBe('2');
-    // Games Played = 7 + 3 = 10
-    expect(statCards[1].querySelector('.stat-value')!.textContent).toBe('10');
+    // Games Played = 0 (no actual game records or completed tournament matches in mock data)
+    expect(statCards[1].querySelector('.stat-value')!.textContent).toBe('0');
     // Tournaments = 2 (actual tournament count, not sum of player participations)
     expect(statCards[2].querySelector('.stat-value')!.textContent).toBe('2');
   });
