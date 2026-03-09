@@ -102,10 +102,9 @@ describe('CONTRACTS', () => {
 });
 
 describe('GAME_MODE_LABELS', () => {
-  it('has labels for all 4 game modes', () => {
-    expect(Object.keys(GAME_MODE_LABELS)).toHaveLength(4);
+  it('has labels for all 3 game modes', () => {
+    expect(Object.keys(GAME_MODE_LABELS)).toHaveLength(3);
     expect(GAME_MODE_LABELS.classic).toBe('Classic Halve-It');
-    expect(GAME_MODE_LABELS.yahtzee).toBe('Yahtzee Style');
     expect(GAME_MODE_LABELS.clock).toBe('Clock');
     expect(GAME_MODE_LABELS.killer).toBe('Killer');
   });
