@@ -143,32 +143,36 @@ export function getTotalRounds(matches: TournamentMatch[]): number {
 // ============================================================
 
 /**
- * Create a new round of matches from manual pairings.
+ * Create a new round of matches from manual groupings.
+ * Each group is an array of 2+ player IDs that will play together in one match.
  * Returns the full matches array (existing + new).
  */
 export function createFlexibleRound(
   existingMatches: TournamentMatch[],
-  pairings: [string, string][]
+  groups: string[][]
 ): TournamentMatch[] {
-  if (pairings.length === 0) throw new Error('Need at least one pairing');
+  if (groups.length === 0) throw new Error('Need at least one pairing');
 
-  // Validate no player appears in more than one pairing
-  const allPlayers = pairings.flat();
+  // Validate groups and no player appears in more than one group
+  const allPlayers = groups.flat();
   const seen = new Set<string>();
   for (const pid of allPlayers) {
     if (!pid) throw new Error('Player ID cannot be empty');
     if (seen.has(pid)) throw new Error(`Player ${pid} appears in multiple pairings`);
     seen.add(pid);
   }
+  for (const group of groups) {
+    if (group.length < 2) throw new Error('Each match must have at least 2 players');
+  }
 
   const nextRound = existingMatches.length === 0
     ? 1
     : Math.max(...existingMatches.map((m) => m.round)) + 1;
 
-  const newMatches: TournamentMatch[] = pairings.map(([p1, p2], i) => ({
+  const newMatches: TournamentMatch[] = groups.map((playerIds, i) => ({
     round: nextRound,
     matchIndex: i,
-    playerIds: [p1, p2],
+    playerIds: [...playerIds],
     status: 'pending' as const,
   }));
 

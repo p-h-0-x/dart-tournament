@@ -129,8 +129,8 @@ function CreateTournamentForm({ players, onClose }: { players: { id: string; nam
 
 function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: Tournament; allPlayers: Player[]; getPlayer: (id: string) => Player | undefined }) {
   const [saving, setSaving] = useState(false);
-  const [pairings, setPairings] = useState<[string, string][]>([]);
-  const [pairingSelection, setPairingSelection] = useState<string[]>([]);
+  const [groups, setGroups] = useState<string[][]>([]);
+  const [groupSelection, setGroupSelection] = useState<string[]>([]);
   const [showPairingUI, setShowPairingUI] = useState(false);
   const [addPlayerOpen, setAddPlayerOpen] = useState(false);
 
@@ -179,38 +179,36 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
     }
   };
 
-  // --- Pairing management ---
-  const togglePairingPlayer = (playerId: string) => {
-    setPairingSelection((prev) => {
-      if (prev.includes(playerId)) return prev.filter((id) => id !== playerId);
-      if (prev.length < 2) return [...prev, playerId];
-      return prev;
-    });
+  // --- Group/pairing management ---
+  const toggleGroupPlayer = (playerId: string) => {
+    setGroupSelection((prev) =>
+      prev.includes(playerId) ? prev.filter((id) => id !== playerId) : [...prev, playerId]
+    );
   };
 
-  const addPairing = () => {
-    if (pairingSelection.length === 2) {
-      setPairings((prev) => [...prev, [pairingSelection[0], pairingSelection[1]]]);
-      setPairingSelection([]);
+  const addGroup = () => {
+    if (groupSelection.length >= 2) {
+      setGroups((prev) => [...prev, [...groupSelection]]);
+      setGroupSelection([]);
     }
   };
 
-  const removePairing = (index: number) => {
-    setPairings((prev) => prev.filter((_, i) => i !== index));
+  const removeGroup = (index: number) => {
+    setGroups((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const pairedPlayerIds = new Set(pairings.flat());
+  const groupedPlayerIds = new Set(groups.flat());
 
-  const availableForPairing = activePlayerIds.filter((id) => !pairedPlayerIds.has(id));
+  const availableForGrouping = activePlayerIds.filter((id) => !groupedPlayerIds.has(id));
 
   const createRound = async () => {
-    if (pairings.length === 0) return;
+    if (groups.length === 0) return;
     setSaving(true);
     try {
-      const updatedMatches = createFlexibleRound(t.matches ?? [], pairings);
+      const updatedMatches = createFlexibleRound(t.matches ?? [], groups);
       await updateTournament(t.id, { matches: updatedMatches });
-      setPairings([]);
-      setPairingSelection([]);
+      setGroups([]);
+      setGroupSelection([]);
       setShowPairingUI(false);
     } finally {
       setSaving(false);
@@ -249,7 +247,7 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
 
   // Pending matches in the current round
   const pendingMatches = (t.matches ?? []).filter(
-    (m: TournamentMatch) => m.round === totalRounds && m.status !== 'completed' && m.playerIds.length === 2
+    (m: TournamentMatch) => m.round === totalRounds && m.status !== 'completed' && m.playerIds.length >= 2
   );
 
   // Players available to add (registered but not currently active)
@@ -372,27 +370,27 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
           ) : (
             <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1rem' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                Round {totalRounds + 1} — Match Pairings
+                Round {totalRounds + 1} — Match Setup
               </h4>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem', marginTop: 0 }}>
-                Tap two players to create a match, then repeat for all matchups. Players who previously lost (crossed out) can still be paired.
+                Select 2 or more players for each match, then confirm. Repeat to create all matches for this round.
               </p>
 
-              {/* Confirmed matchups */}
-              {pairings.length > 0 && (
+              {/* Confirmed matches */}
+              {groups.length > 0 && (
                 <div style={{ marginBottom: '0.75rem' }}>
-                  <p style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Matchups:</p>
-                  {pairings.map(([p1, p2], i) => (
+                  <p style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Matches:</p>
+                  {groups.map((group, i) => (
                     <div key={i} style={{
                       display: 'flex', alignItems: 'center', gap: '0.5rem',
                       padding: '0.4rem 0.5rem', borderBottom: '1px solid var(--border)',
                       background: 'var(--bg-secondary)', borderRadius: 'var(--radius)', marginBottom: '0.25rem',
                     }}>
                       <span style={{ fontSize: '0.85rem', flex: 1 }}>
-                        {getPlayer(p1)?.name ?? '?'} vs {getPlayer(p2)?.name ?? '?'}
+                        {group.map((pid) => getPlayer(pid)?.name ?? '?').join(' vs ')}
                       </span>
                       <button
-                        onClick={() => removePairing(i)}
+                        onClick={() => removeGroup(i)}
                         style={{
                           background: 'none', border: 'none', color: 'var(--danger)',
                           cursor: 'pointer', fontSize: '0.85rem',
@@ -405,20 +403,20 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
                 </div>
               )}
 
-              {/* Select players to pair */}
-              {availableForPairing.length >= 2 && (
+              {/* Select players for a match */}
+              {availableForGrouping.length >= 2 && (
                 <div style={{ marginBottom: '0.75rem' }}>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                    Tap 2 players to pair them ({pairingSelection.length}/2 selected):
+                    Tap players to add them to a match ({groupSelection.length} selected):
                   </p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    {availableForPairing.map((pid) => {
+                    {availableForGrouping.map((pid) => {
                       const isElim = eliminatedIds.has(pid);
                       return (
                         <button
                           key={pid}
-                          className={`btn btn-sm ${pairingSelection.includes(pid) ? 'btn-primary' : 'btn-outline'}`}
-                          onClick={() => togglePairingPlayer(pid)}
+                          className={`btn btn-sm ${groupSelection.includes(pid) ? 'btn-primary' : 'btn-outline'}`}
+                          onClick={() => toggleGroupPlayer(pid)}
                           style={{ textDecoration: isElim ? 'line-through' : 'none' }}
                         >
                           {getPlayer(pid)?.name ?? '?'}
@@ -426,31 +424,31 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
                       );
                     })}
                   </div>
-                  {pairingSelection.length === 2 && (
-                    <button className="btn btn-success btn-sm mt-2" onClick={addPairing}>
-                      Confirm Matchup
+                  {groupSelection.length >= 2 && (
+                    <button className="btn btn-success btn-sm mt-2" onClick={addGroup}>
+                      Confirm Match ({groupSelection.length} players)
                     </button>
                   )}
                 </div>
               )}
 
-              {availableForPairing.length === 1 && (
+              {availableForGrouping.length === 1 && (
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                  1 player without a match: {getPlayer(availableForPairing[0])?.name ?? '?'} (sits out this round)
+                  1 player without a match: {getPlayer(availableForGrouping[0])?.name ?? '?'} (sits out this round)
                 </p>
               )}
 
-              {availableForPairing.length === 0 && pairings.length > 0 && (
+              {availableForGrouping.length === 0 && groups.length > 0 && (
                 <p style={{ fontSize: '0.8rem', color: 'var(--success)', marginBottom: '0.75rem' }}>
-                  All players paired!
+                  All players assigned!
                 </p>
               )}
 
               <div className="flex gap-2">
-                <button className="btn btn-primary btn-sm" onClick={createRound} disabled={saving || pairings.length === 0}>
-                  {saving ? 'Creating...' : `Create Round ${totalRounds + 1} (${pairings.length} match${pairings.length !== 1 ? 'es' : ''})`}
+                <button className="btn btn-primary btn-sm" onClick={createRound} disabled={saving || groups.length === 0}>
+                  {saving ? 'Creating...' : `Create Round ${totalRounds + 1} (${groups.length} match${groups.length !== 1 ? 'es' : ''})`}
                 </button>
-                <button className="btn btn-outline btn-sm" onClick={() => { setShowPairingUI(false); setPairings([]); setPairingSelection([]); }}>
+                <button className="btn btn-outline btn-sm" onClick={() => { setShowPairingUI(false); setGroups([]); setGroupSelection([]); }}>
                   Cancel
                 </button>
               </div>
