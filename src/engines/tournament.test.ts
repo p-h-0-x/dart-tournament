@@ -266,6 +266,24 @@ describe('createFlexibleRound', () => {
   it('throws when player ID is empty', () => {
     expect(() => createFlexibleRound([], [['a', '']])).toThrow('Player ID cannot be empty');
   });
+
+  it('throws when a group has fewer than 2 players', () => {
+    expect(() => createFlexibleRound([], [['a']])).toThrow('Each match must have at least 2 players');
+  });
+
+  it('supports groups with more than 2 players', () => {
+    const matches = createFlexibleRound([], [['a', 'b', 'c'], ['d', 'e']]);
+    expect(matches).toHaveLength(2);
+    expect(matches[0].playerIds).toEqual(['a', 'b', 'c']);
+    expect(matches[1].playerIds).toEqual(['d', 'e']);
+  });
+
+  it('supports setting winner in a multi-player match', () => {
+    const matches = createFlexibleRound([], [['a', 'b', 'c']]);
+    const updated = setFlexibleMatchWinner(matches, 1, 0, 'b');
+    expect(updated[0].winnerId).toBe('b');
+    expect(updated[0].status).toBe('completed');
+  });
 });
 
 describe('setFlexibleMatchWinner', () => {
