@@ -5,6 +5,8 @@ import {
   getDoc,
   addDoc,
   updateDoc,
+  deleteDoc,
+  writeBatch,
   query,
   orderBy,
   where,
@@ -97,4 +99,14 @@ export function onTournamentsChange(cb: (ts: Tournament[]) => void): Unsubscribe
   return onSnapshot(query(tournamentsCol(), orderBy('createdAt', 'desc')), (snap) => {
     cb(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Tournament)));
   });
+}
+
+export async function deleteTournament(id: string): Promise<void> {
+  const batch = writeBatch(db);
+  const gamesSnap = await getDocs(
+    query(gamesCol(), where('tournamentId', '==', id))
+  );
+  gamesSnap.docs.forEach((d) => batch.delete(d.ref));
+  batch.delete(doc(db, 'tournaments', id));
+  await batch.commit();
 }

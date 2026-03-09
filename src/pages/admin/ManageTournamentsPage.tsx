@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
-import { addTournament, updateTournament } from '../../services/database';
+import { addTournament, updateTournament, deleteTournament } from '../../services/database';
 import { createFlexibleRound, setFlexibleMatchWinner, isRoundComplete, getTotalRounds, getEliminatedPlayerIds } from '../../engines/tournament';
 import { GAME_MODE_LABELS, type GameMode, type TournamentStatus, type Tournament, type TournamentMatch, type Player } from '../../models/types';
 
@@ -133,6 +133,8 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
   const [groupSelection, setGroupSelection] = useState<string[]>([]);
   const [showPairingUI, setShowPairingUI] = useState(false);
   const [addPlayerOpen, setAddPlayerOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const activePlayerIds = t.activePlayerIds ?? t.playerIds ?? [];
   const totalRounds = getTotalRounds(t.matches ?? []);
@@ -143,6 +145,17 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
     draft: 'badge-info',
     in_progress: 'badge-warning',
     completed: 'badge-success',
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await deleteTournament(t.id);
+    } catch (e) {
+      alert('Failed to delete tournament: ' + String(e));
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
   };
 
   const startTournament = async () => {
@@ -271,6 +284,13 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
             </button>
           )}
           <Link to={`/tournaments/${t.id}`} className="btn btn-outline btn-sm">View</Link>
+          <button
+            className="btn btn-outline btn-sm"
+            style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            Delete
+          </button>
         </div>
       </div>
 
@@ -492,6 +512,28 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
       {t.championId && (
         <div className="mt-4" style={{ color: 'var(--gold)', fontWeight: 600 }}>
           Champion: {getPlayer(t.championId)?.name ?? 'Unknown'}
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div className="modal-overlay" onClick={() => !deleting && setShowDeleteConfirm(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="modal-title">Delete Tournament</h2>
+            <p>Are you sure you want to delete <strong>{t.name}</strong>? This will also permanently delete all associated games. This action cannot be undone.</p>
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => setShowDeleteConfirm(false)} disabled={deleting}>
+                Cancel
+              </button>
+              <button
+                className="btn btn-outline"
+                style={{ color: 'white', background: 'var(--danger)', borderColor: 'var(--danger)' }}
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting...' : 'Delete Tournament'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
