@@ -24,7 +24,7 @@ export default function GamesPage() {
   // Collect game IDs linked to tournament matches to avoid duplicates
   const tournamentGameIds = new Set<string>();
   for (const t of tournaments) {
-    for (const m of t.matches) {
+    for (const m of t.matches ?? []) {
       if (m.gameId) tournamentGameIds.add(m.gameId);
     }
   }
@@ -51,6 +51,7 @@ export default function GamesPage() {
 
   // Add tournament matches (that don't have a linked game)
   for (const t of tournaments) {
+    if (!t.matches?.length) continue;
     const totalRounds = getTotalRounds(t.matches);
     for (const m of t.matches) {
       if (m.gameId) continue; // already added from games list

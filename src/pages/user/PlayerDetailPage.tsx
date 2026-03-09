@@ -1,7 +1,18 @@
 import { useParams, Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { GAME_MODE_LABELS } from '../../models/types';
+import { getRoundName, getTotalRounds } from '../../engines/tournament';
 import MobileBackHeader from '../../components/MobileBackHeader';
+
+interface HistoryEntry {
+  id: string;
+  isWin: boolean;
+  opponents: string;
+  mode: string;
+  tournamentName?: string;
+  tournamentId?: string;
+  date: number;
+}
 
 export default function PlayerDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -22,7 +33,7 @@ export default function PlayerDetailPage() {
   // Collect game IDs linked to tournament matches to avoid double-counting
   const tournamentGameIds = new Set<string>();
   for (const t of tournaments) {
-    for (const m of t.matches) {
+    for (const m of t.matches ?? []) {
       if (m.gameId) tournamentGameIds.add(m.gameId);
     }
   }
@@ -34,18 +45,19 @@ export default function PlayerDetailPage() {
 
   // Wins/losses from tournament matches
   for (const t of tournaments) {
-    for (const m of t.matches) {
+    for (const m of t.matches ?? []) {
       if (m.status !== 'completed' || !m.winnerId || m.playerIds.length < 2 || !m.playerIds.includes(player.id)) continue;
       if (m.winnerId === player.id) wins++;
       else losses++;
     }
   }
 
+  const totalPlayed = wins + losses;
   const tournamentsWon = tournaments.filter((t) => t.championId === player.id).length;
 
-  // Head-to-head records
+  // Head-to-head records from standalone games
   const h2h: Record<string, { wins: number; losses: number; name: string }> = {};
-  for (const game of playerGames) {
+  for (const game of standaloneGames) {
     const isWin = game.results.some((r) => r.playerId === player.id && r.rank === 1);
     for (const pid of game.playerIds) {
       if (pid === player.id) continue;
@@ -56,6 +68,69 @@ export default function PlayerDetailPage() {
       else h2h[pid].losses++;
     }
   }
+
+  // Head-to-head records from tournament matches
+  for (const t of tournaments) {
+    for (const m of t.matches ?? []) {
+      if (m.status !== 'completed' || !m.winnerId || m.playerIds.length < 2 || !m.playerIds.includes(player.id)) continue;
+      const isWin = m.winnerId === player.id;
+      for (const pid of m.playerIds) {
+        if (pid === player.id) continue;
+        if (!h2h[pid]) {
+          h2h[pid] = { wins: 0, losses: 0, name: getPlayer(pid)?.name ?? 'Unknown' };
+        }
+        if (isWin) h2h[pid].wins++;
+        else h2h[pid].losses++;
+      }
+    }
+  }
+
+  // Build unified game history: standalone games + tournament matches
+  const history: HistoryEntry[] = [];
+
+  for (const game of standaloneGames) {
+    const isWin = game.results.some((r) => r.playerId === player.id && r.rank === 1);
+    const opponents = game.playerIds
+      .filter((pid) => pid !== player.id)
+      .map((pid) => getPlayer(pid)?.name ?? '?')
+      .join(', ');
+    const tournament = game.tournamentId
+      ? tournaments.find((t) => t.id === game.tournamentId)
+      : null;
+    history.push({
+      id: game.id,
+      isWin,
+      opponents,
+      mode: GAME_MODE_LABELS[game.mode],
+      tournamentName: tournament?.name,
+      tournamentId: tournament?.id,
+      date: game.completedAt ?? game.createdAt,
+    });
+  }
+
+  for (const t of tournaments) {
+    if (!t.matches?.length) continue;
+    const totalRounds = getTotalRounds(t.matches);
+    for (const m of t.matches) {
+      if (m.status !== 'completed' || !m.winnerId || m.playerIds.length < 2 || !m.playerIds.includes(player.id)) continue;
+      const isWin = m.winnerId === player.id;
+      const opponents = m.playerIds
+        .filter((pid) => pid !== player.id)
+        .map((pid) => getPlayer(pid)?.name ?? '?')
+        .join(', ');
+      history.push({
+        id: `${t.id}-${m.round}-${m.matchIndex}`,
+        isWin,
+        opponents,
+        mode: GAME_MODE_LABELS[t.gameMode],
+        tournamentName: `${t.name} - ${getRoundName(m.round, totalRounds)}`,
+        tournamentId: t.id,
+        date: t.completedAt ?? t.createdAt,
+      });
+    }
+  }
+
+  history.sort((a, b) => b.date - a.date);
 
   return (
     <div>
@@ -75,7 +150,7 @@ export default function PlayerDetailPage() {
           <div className="stat-label">Losses</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{playerGames.length > 0 ? ((wins / playerGames.length) * 100).toFixed(0) : 0}%</div>
+          <div className="stat-value">{totalPlayed > 0 ? ((wins / totalPlayed) * 100).toFixed(0) : 0}%</div>
           <div className="stat-label">Win Rate</div>
         </div>
         <div className="stat-card">
@@ -143,41 +218,30 @@ export default function PlayerDetailPage() {
       {/* Game History */}
       <div className="card mb-4">
         <h2 className="card-title mb-4">Game History</h2>
-        {playerGames.length === 0 ? (
+        {history.length === 0 ? (
           <p className="text-muted">No games played yet</p>
         ) : (
-          playerGames.map((game) => {
-            const isWin = game.results.some((r) => r.playerId === player.id && r.rank === 1);
-            const opponents = game.playerIds
-              .filter((pid) => pid !== player.id)
-              .map((pid) => getPlayer(pid)?.name ?? '?')
-              .join(', ');
-            const tournament = game.tournamentId
-              ? tournaments.find((t) => t.id === game.tournamentId)
-              : null;
-
-            return (
-              <div key={game.id} className="history-item">
-                <div className={`history-result ${isWin ? 'win' : 'loss'}`}>
-                  {isWin ? 'WIN' : 'LOSS'}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 500 }}>vs {opponents}</div>
-                  <div className="flex gap-2 items-center mt-2">
-                    <span className="mode-tag">{GAME_MODE_LABELS[game.mode]}</span>
-                    {tournament && (
-                      <Link to={`/tournaments/${tournament.id}`} className="text-sm">
-                        {tournament.name}
-                      </Link>
-                    )}
-                  </div>
-                </div>
-                <div className="text-sm text-muted">
-                  {new Date(game.createdAt).toLocaleDateString()}
+          history.map((entry) => (
+            <div key={entry.id} className="history-item">
+              <div className={`history-result ${entry.isWin ? 'win' : 'loss'}`}>
+                {entry.isWin ? 'WIN' : 'LOSS'}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 500 }}>vs {entry.opponents}</div>
+                <div className="flex gap-2 items-center mt-2">
+                  <span className="mode-tag">{entry.mode}</span>
+                  {entry.tournamentName && (
+                    <Link to={`/tournaments/${entry.tournamentId}`} className="text-sm">
+                      {entry.tournamentName}
+                    </Link>
+                  )}
                 </div>
               </div>
-            );
-          })
+              <div className="text-sm text-muted">
+                {new Date(entry.date).toLocaleDateString()}
+              </div>
+            </div>
+          ))
         )}
       </div>
 
