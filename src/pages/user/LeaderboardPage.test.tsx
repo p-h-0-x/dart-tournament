@@ -117,7 +117,10 @@ describe('LeaderboardPage', () => {
       loading: false,
       players: [],
       games: [],
-      tournaments: [],
+      tournaments: [
+        { id: 't1', name: 'T1', playerIds: ['p1', 'p2'], rounds: [], status: 'completed', createdAt: 1000 },
+        { id: 't2', name: 'T2', playerIds: ['p1'], rounds: [], status: 'completed', createdAt: 1001 },
+      ] as any,
       getPlayer: () => undefined,
     });
 
@@ -131,8 +134,8 @@ describe('LeaderboardPage', () => {
     expect(statCards[0].querySelector('.stat-value')!.textContent).toBe('2');
     // Games Played = 7 + 3 = 10
     expect(statCards[1].querySelector('.stat-value')!.textContent).toBe('10');
-    // Tournaments = 2 + 1 = 3
-    expect(statCards[2].querySelector('.stat-value')!.textContent).toBe('3');
+    // Tournaments = 2 (actual tournament count, not sum of player participations)
+    expect(statCards[2].querySelector('.stat-value')!.textContent).toBe('2');
   });
 
   it('renders player links pointing to player detail', () => {

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 
 export default function LeaderboardPage() {
-  const { leaderboard, loading } = useData();
+  const { leaderboard, tournaments, loading } = useData();
 
   if (loading) {
     return <div className="loading"><div className="spinner" /> Loading leaderboard...</div>;
@@ -25,7 +25,7 @@ export default function LeaderboardPage() {
           <div className="stat-label">Games Played</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{leaderboard.reduce((s, e) => s + e.tournamentsPlayed, 0)}</div>
+          <div className="stat-value">{tournaments.length}</div>
           <div className="stat-label">Tournaments</div>
         </div>
       </div>
