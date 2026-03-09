@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { GAME_MODE_LABELS } from '../../models/types';
-import { getTotalRounds } from '../../engines/tournament';
+import { getTotalRounds, getEliminatedPlayerIds } from '../../engines/tournament';
 import MobileBackHeader from '../../components/MobileBackHeader';
 
 export default function TournamentDetailPage() {
@@ -21,6 +21,7 @@ export default function TournamentDetailPage() {
   const totalRounds = getTotalRounds(matches);
   const rounds = Array.from({ length: totalRounds }, (_, i) => totalRounds - i); // reverse: latest first
   const activePlayerIds = tournament.activePlayerIds ?? tournament.playerIds ?? [];
+  const eliminatedIds = getEliminatedPlayerIds(matches);
   const tournamentGames = games.filter((g) => g.tournamentId === tournament.id);
 
   return (
@@ -49,16 +50,21 @@ export default function TournamentDetailPage() {
       <div className="card mb-4">
         <h2 className="card-title mb-4">Active Players</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-          {activePlayerIds.map((pid) => (
-            <span key={pid} style={{
-              padding: '0.25rem 0.75rem',
-              background: 'var(--bg-secondary)',
-              borderRadius: 'var(--radius)',
-              fontSize: '0.9rem',
-            }}>
-              {getPlayer(pid)?.name ?? 'Unknown'}
-            </span>
-          ))}
+          {activePlayerIds.map((pid) => {
+            const isEliminated = eliminatedIds.has(pid);
+            return (
+              <span key={pid} style={{
+                padding: '0.25rem 0.75rem',
+                background: 'var(--bg-secondary)',
+                borderRadius: 'var(--radius)',
+                fontSize: '0.9rem',
+                textDecoration: isEliminated ? 'line-through' : 'none',
+                opacity: isEliminated ? 0.6 : 1,
+              }}>
+                {getPlayer(pid)?.name ?? 'Unknown'}
+              </span>
+            );
+          })}
           {activePlayerIds.length === 0 && (
             <span className="text-muted">No active players</span>
           )}

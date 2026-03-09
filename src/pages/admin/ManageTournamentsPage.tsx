@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { addTournament, updateTournament } from '../../services/database';
-import { createFlexibleRound, setFlexibleMatchWinner, isRoundComplete, getTotalRounds } from '../../engines/tournament';
+import { createFlexibleRound, setFlexibleMatchWinner, isRoundComplete, getTotalRounds, getEliminatedPlayerIds } from '../../engines/tournament';
 import { GAME_MODE_LABELS, type GameMode, type TournamentStatus, type Tournament, type TournamentMatch, type Player } from '../../models/types';
 
 export default function ManageTournamentsPage() {
@@ -137,6 +137,7 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
   const activePlayerIds = t.activePlayerIds ?? t.playerIds ?? [];
   const totalRounds = getTotalRounds(t.matches ?? []);
   const currentRoundComplete = totalRounds === 0 || isRoundComplete(t.matches ?? [], totalRounds);
+  const eliminatedIds = getEliminatedPlayerIds(t.matches ?? []);
 
   const statusColors: Record<TournamentStatus, string> = {
     draft: 'badge-info',
@@ -282,11 +283,15 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
             Active Players
           </h4>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
-            {activePlayerIds.map((pid) => (
+            {activePlayerIds.map((pid) => {
+              const isEliminated = eliminatedIds.has(pid);
+              return (
               <span key={pid} style={{
                 display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
                 padding: '0.25rem 0.5rem', background: 'var(--bg-secondary)',
                 borderRadius: 'var(--radius)', fontSize: '0.85rem',
+                textDecoration: isEliminated ? 'line-through' : 'none',
+                opacity: isEliminated ? 0.6 : 1,
               }}>
                 {getPlayer(pid)?.name ?? '?'}
                 <button
@@ -301,7 +306,8 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
                   x
                 </button>
               </span>
-            ))}
+              );
+            })}
           </div>
           {availableToAdd.length > 0 && (
             <div>
@@ -365,19 +371,24 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
             </button>
           ) : (
             <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1rem' }}>
-              <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem' }}>
-                Create Round {totalRounds + 1} - Set Pairings
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                Round {totalRounds + 1} — Match Pairings
               </h4>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem', marginTop: 0 }}>
+                Tap two players to create a match, then repeat for all matchups. Players who previously lost (crossed out) can still be paired.
+              </p>
 
-              {/* Current pairings */}
+              {/* Confirmed matchups */}
               {pairings.length > 0 && (
                 <div style={{ marginBottom: '0.75rem' }}>
+                  <p style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Matchups:</p>
                   {pairings.map(([p1, p2], i) => (
                     <div key={i} style={{
                       display: 'flex', alignItems: 'center', gap: '0.5rem',
-                      padding: '0.4rem 0', borderBottom: '1px solid var(--border)',
+                      padding: '0.4rem 0.5rem', borderBottom: '1px solid var(--border)',
+                      background: 'var(--bg-secondary)', borderRadius: 'var(--radius)', marginBottom: '0.25rem',
                     }}>
-                      <span style={{ fontSize: '0.85rem' }}>
+                      <span style={{ fontSize: '0.85rem', flex: 1 }}>
                         {getPlayer(p1)?.name ?? '?'} vs {getPlayer(p2)?.name ?? '?'}
                       </span>
                       <button
@@ -398,36 +409,46 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
               {availableForPairing.length >= 2 && (
                 <div style={{ marginBottom: '0.75rem' }}>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                    Select 2 players to pair ({pairingSelection.length}/2 selected)
+                    Tap 2 players to pair them ({pairingSelection.length}/2 selected):
                   </p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    {availableForPairing.map((pid) => (
-                      <button
-                        key={pid}
-                        className={`btn btn-sm ${pairingSelection.includes(pid) ? 'btn-primary' : 'btn-outline'}`}
-                        onClick={() => togglePairingPlayer(pid)}
-                      >
-                        {getPlayer(pid)?.name ?? '?'}
-                      </button>
-                    ))}
+                    {availableForPairing.map((pid) => {
+                      const isElim = eliminatedIds.has(pid);
+                      return (
+                        <button
+                          key={pid}
+                          className={`btn btn-sm ${pairingSelection.includes(pid) ? 'btn-primary' : 'btn-outline'}`}
+                          onClick={() => togglePairingPlayer(pid)}
+                          style={{ textDecoration: isElim ? 'line-through' : 'none' }}
+                        >
+                          {getPlayer(pid)?.name ?? '?'}
+                        </button>
+                      );
+                    })}
                   </div>
                   {pairingSelection.length === 2 && (
                     <button className="btn btn-success btn-sm mt-2" onClick={addPairing}>
-                      Add Pairing
+                      Confirm Matchup
                     </button>
                   )}
                 </div>
               )}
 
-              {availableForPairing.length > 0 && availableForPairing.length < 2 && (
+              {availableForPairing.length === 1 && (
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                  {availableForPairing.length} player(s) unpaired: {availableForPairing.map((pid) => getPlayer(pid)?.name ?? '?').join(', ')}
+                  1 player without a match: {getPlayer(availableForPairing[0])?.name ?? '?'} (sits out this round)
+                </p>
+              )}
+
+              {availableForPairing.length === 0 && pairings.length > 0 && (
+                <p style={{ fontSize: '0.8rem', color: 'var(--success)', marginBottom: '0.75rem' }}>
+                  All players paired!
                 </p>
               )}
 
               <div className="flex gap-2">
                 <button className="btn btn-primary btn-sm" onClick={createRound} disabled={saving || pairings.length === 0}>
-                  {saving ? 'Creating...' : `Create Round (${pairings.length} match${pairings.length !== 1 ? 'es' : ''})`}
+                  {saving ? 'Creating...' : `Create Round ${totalRounds + 1} (${pairings.length} match${pairings.length !== 1 ? 'es' : ''})`}
                 </button>
                 <button className="btn btn-outline btn-sm" onClick={() => { setShowPairingUI(false); setPairings([]); setPairingSelection([]); }}>
                   Cancel

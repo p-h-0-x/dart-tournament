@@ -199,6 +199,22 @@ export function setFlexibleMatchWinner(
 /**
  * Check if all matches in a given round are completed.
  */
+/**
+ * Get the set of player IDs that have lost at least one match in the tournament.
+ * These players can still be paired in future rounds (losers bracket / comeback).
+ */
+export function getEliminatedPlayerIds(matches: TournamentMatch[]): Set<string> {
+  const losers = new Set<string>();
+  for (const m of matches) {
+    if (m.status === 'completed' && m.winnerId && m.playerIds.length >= 2) {
+      for (const pid of m.playerIds) {
+        if (pid !== m.winnerId) losers.add(pid);
+      }
+    }
+  }
+  return losers;
+}
+
 export function isRoundComplete(matches: TournamentMatch[], round: number): boolean {
   const roundMatches = matches.filter((m) => m.round === round);
   if (roundMatches.length === 0) return true;
