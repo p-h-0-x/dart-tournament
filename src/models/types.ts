@@ -3,12 +3,13 @@
 // ============================================================
 
 // --- Game Modes ---
-export type GameMode = 'classic' | 'clock' | 'killer';
+export type GameMode = 'classic' | 'clock' | 'killer' | '301/501';
 
 export const GAME_MODE_LABELS: Record<GameMode, string> = {
   classic: 'Classic Halve-It',
   clock: 'Clock',
   killer: 'Killer',
+  '301/501': '301/501',
 };
 
 // --- Dart & Board ---

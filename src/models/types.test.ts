@@ -102,10 +102,11 @@ describe('CONTRACTS', () => {
 });
 
 describe('GAME_MODE_LABELS', () => {
-  it('has labels for all 3 game modes', () => {
-    expect(Object.keys(GAME_MODE_LABELS)).toHaveLength(3);
+  it('has labels for all 4 game modes', () => {
+    expect(Object.keys(GAME_MODE_LABELS)).toHaveLength(4);
     expect(GAME_MODE_LABELS.classic).toBe('Classic Halve-It');
     expect(GAME_MODE_LABELS.clock).toBe('Clock');
     expect(GAME_MODE_LABELS.killer).toBe('Killer');
+    expect(GAME_MODE_LABELS['301/501']).toBe('301/501');
   });
 });
