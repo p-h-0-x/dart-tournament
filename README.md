@@ -19,10 +19,14 @@ A dart tournament management app built with React + TypeScript, Firebase, and de
 
 ### 1. Firebase Configuration
 
+> **New to Firebase?** Follow the detailed step-by-step guide: [docs/FIREBASE_SETUP.md](docs/FIREBASE_SETUP.md)
+
+Quick version:
+
 1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
 2. Enable **Authentication** (Email/Password provider)
-3. Enable **Firestore Database**
-4. Create an admin user in Firebase Authentication
+3. Create an admin user in Authentication > Users
+4. Enable **Firestore Database** and publish the security rules from `firestore.rules`
 5. Copy `.env.example` to `.env` and fill in your Firebase config values:
 
 ```bash
