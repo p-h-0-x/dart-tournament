@@ -134,5 +134,73 @@ export function getRoundName(round: number, totalRounds: number): string {
 }
 
 export function getTotalRounds(matches: TournamentMatch[]): number {
+  if (matches.length === 0) return 0;
   return Math.max(...matches.map((m) => m.round));
+}
+
+// ============================================================
+// Flexible tournament functions
+// ============================================================
+
+/**
+ * Create a new round of matches from manual pairings.
+ * Returns the full matches array (existing + new).
+ */
+export function createFlexibleRound(
+  existingMatches: TournamentMatch[],
+  pairings: [string, string][]
+): TournamentMatch[] {
+  if (pairings.length === 0) throw new Error('Need at least one pairing');
+
+  // Validate no player appears in more than one pairing
+  const allPlayers = pairings.flat();
+  const seen = new Set<string>();
+  for (const pid of allPlayers) {
+    if (!pid) throw new Error('Player ID cannot be empty');
+    if (seen.has(pid)) throw new Error(`Player ${pid} appears in multiple pairings`);
+    seen.add(pid);
+  }
+
+  const nextRound = existingMatches.length === 0
+    ? 1
+    : Math.max(...existingMatches.map((m) => m.round)) + 1;
+
+  const newMatches: TournamentMatch[] = pairings.map(([p1, p2], i) => ({
+    round: nextRound,
+    matchIndex: i,
+    playerIds: [p1, p2],
+    status: 'pending' as const,
+  }));
+
+  return [...existingMatches, ...newMatches];
+}
+
+/**
+ * Set the winner of a match in a flexible tournament.
+ * No next-round propagation (rounds are created manually).
+ */
+export function setFlexibleMatchWinner(
+  matches: TournamentMatch[],
+  round: number,
+  matchIndex: number,
+  winnerId: string
+): TournamentMatch[] {
+  return matches.map((m) => {
+    if (m.round === round && m.matchIndex === matchIndex) {
+      if (!m.playerIds.includes(winnerId)) {
+        throw new Error(`Player ${winnerId} is not in this match`);
+      }
+      return { ...m, winnerId, status: 'completed' as const };
+    }
+    return { ...m };
+  });
+}
+
+/**
+ * Check if all matches in a given round are completed.
+ */
+export function isRoundComplete(matches: TournamentMatch[], round: number): boolean {
+  const roundMatches = matches.filter((m) => m.round === round);
+  if (roundMatches.length === 0) return true;
+  return roundMatches.every((m) => m.status === 'completed');
 }

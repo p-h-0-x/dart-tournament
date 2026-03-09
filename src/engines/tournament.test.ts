@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateBracket, advanceWinner, getRoundName, getTotalRounds } from './tournament';
+import { generateBracket, advanceWinner, getRoundName, getTotalRounds, createFlexibleRound, setFlexibleMatchWinner, isRoundComplete } from './tournament';
 
 describe('generateBracket', () => {
   it('throws with fewer than 3 players', () => {
@@ -211,5 +211,118 @@ describe('getTotalRounds', () => {
   it('returns 3 for 8-player bracket', () => {
     const matches = generateBracket(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']);
     expect(getTotalRounds(matches)).toBe(3);
+  });
+
+  it('returns 0 for empty matches', () => {
+    expect(getTotalRounds([])).toBe(0);
+  });
+});
+
+// ============================================================
+// Flexible tournament tests
+// ============================================================
+
+describe('createFlexibleRound', () => {
+  it('creates first round from empty matches', () => {
+    const matches = createFlexibleRound([], [['a', 'b'], ['c', 'd']]);
+    expect(matches).toHaveLength(2);
+    expect(matches[0].round).toBe(1);
+    expect(matches[0].matchIndex).toBe(0);
+    expect(matches[0].playerIds).toEqual(['a', 'b']);
+    expect(matches[0].status).toBe('pending');
+    expect(matches[1].round).toBe(1);
+    expect(matches[1].matchIndex).toBe(1);
+    expect(matches[1].playerIds).toEqual(['c', 'd']);
+  });
+
+  it('creates subsequent rounds with incrementing round number', () => {
+    let matches = createFlexibleRound([], [['a', 'b']]);
+    matches = setFlexibleMatchWinner(matches, 1, 0, 'a');
+    matches = createFlexibleRound(matches, [['a', 'c']]);
+
+    const round2 = matches.filter((m) => m.round === 2);
+    expect(round2).toHaveLength(1);
+    expect(round2[0].playerIds).toEqual(['a', 'c']);
+    expect(round2[0].status).toBe('pending');
+  });
+
+  it('preserves existing matches', () => {
+    const round1 = createFlexibleRound([], [['a', 'b']]);
+    const all = createFlexibleRound(round1, [['c', 'd']]);
+
+    expect(all).toHaveLength(2);
+    expect(all[0].round).toBe(1);
+    expect(all[1].round).toBe(2);
+  });
+
+  it('throws when pairings are empty', () => {
+    expect(() => createFlexibleRound([], [])).toThrow('Need at least one pairing');
+  });
+
+  it('throws when a player appears in multiple pairings', () => {
+    expect(() => createFlexibleRound([], [['a', 'b'], ['a', 'c']])).toThrow('Player a appears in multiple pairings');
+  });
+
+  it('throws when player ID is empty', () => {
+    expect(() => createFlexibleRound([], [['a', '']])).toThrow('Player ID cannot be empty');
+  });
+});
+
+describe('setFlexibleMatchWinner', () => {
+  it('marks the match as completed with the winner', () => {
+    const matches = createFlexibleRound([], [['a', 'b'], ['c', 'd']]);
+    const updated = setFlexibleMatchWinner(matches, 1, 0, 'a');
+
+    const match = updated.find((m) => m.round === 1 && m.matchIndex === 0);
+    expect(match!.winnerId).toBe('a');
+    expect(match!.status).toBe('completed');
+  });
+
+  it('does not modify other matches', () => {
+    const matches = createFlexibleRound([], [['a', 'b'], ['c', 'd']]);
+    const updated = setFlexibleMatchWinner(matches, 1, 0, 'a');
+
+    const other = updated.find((m) => m.round === 1 && m.matchIndex === 1);
+    expect(other!.status).toBe('pending');
+    expect(other!.winnerId).toBeUndefined();
+  });
+
+  it('does not modify original array (immutability)', () => {
+    const matches = createFlexibleRound([], [['a', 'b']]);
+    setFlexibleMatchWinner(matches, 1, 0, 'a');
+
+    expect(matches[0].status).toBe('pending');
+    expect(matches[0].winnerId).toBeUndefined();
+  });
+
+  it('throws when winnerId is not in the match', () => {
+    const matches = createFlexibleRound([], [['a', 'b']]);
+    expect(() => setFlexibleMatchWinner(matches, 1, 0, 'c')).toThrow('Player c is not in this match');
+  });
+});
+
+describe('isRoundComplete', () => {
+  it('returns true when all matches in round are completed', () => {
+    let matches = createFlexibleRound([], [['a', 'b'], ['c', 'd']]);
+    matches = setFlexibleMatchWinner(matches, 1, 0, 'a');
+    matches = setFlexibleMatchWinner(matches, 1, 1, 'c');
+
+    expect(isRoundComplete(matches, 1)).toBe(true);
+  });
+
+  it('returns false when some matches are still pending', () => {
+    let matches = createFlexibleRound([], [['a', 'b'], ['c', 'd']]);
+    matches = setFlexibleMatchWinner(matches, 1, 0, 'a');
+
+    expect(isRoundComplete(matches, 1)).toBe(false);
+  });
+
+  it('returns true for empty round', () => {
+    expect(isRoundComplete([], 1)).toBe(true);
+  });
+
+  it('returns true for a round that does not exist', () => {
+    const matches = createFlexibleRound([], [['a', 'b']]);
+    expect(isRoundComplete(matches, 99)).toBe(true);
   });
 });

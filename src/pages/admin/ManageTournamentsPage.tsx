@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { addTournament, updateTournament } from '../../services/database';
-import { generateBracket, advanceWinner, getTotalRounds, getRoundName } from '../../engines/tournament';
+import { createFlexibleRound, setFlexibleMatchWinner, isRoundComplete, getTotalRounds } from '../../engines/tournament';
 import { GAME_MODE_LABELS, type GameMode, type TournamentStatus, type Tournament, type TournamentMatch, type Player } from '../../models/types';
 
 export default function ManageTournamentsPage() {
@@ -36,7 +36,7 @@ export default function ManageTournamentsPage() {
 
       <div style={{ display: 'grid', gap: '1rem' }}>
         {tournaments.map((t) => (
-          <TournamentCard key={t.id} tournament={t} getPlayer={getPlayer} />
+          <TournamentCard key={t.id} tournament={t} allPlayers={players} getPlayer={getPlayer} />
         ))}
       </div>
     </div>
@@ -58,16 +58,16 @@ function CreateTournamentForm({ players, onClose }: { players: { id: string; nam
 
   const handleCreate = async () => {
     if (!name.trim()) return setError('Name required');
-    if (selectedPlayers.length < 3) return setError('Need at least 3 players');
+    if (selectedPlayers.length < 2) return setError('Need at least 2 players');
     setCreating(true);
     setError('');
     try {
-      const matches = generateBracket(selectedPlayers);
       await addTournament({
         name: name.trim(),
         gameMode,
-        playerIds: selectedPlayers,
-        matches,
+        playerIds: [...selectedPlayers],
+        activePlayerIds: [...selectedPlayers],
+        matches: [],
         status: 'draft',
         createdAt: Date.now(),
       });
@@ -99,7 +99,7 @@ function CreateTournamentForm({ players, onClose }: { players: { id: string; nam
         </div>
 
         <div className="form-group">
-          <label className="form-label">Players ({selectedPlayers.length} selected, min 3)</label>
+          <label className="form-label">Players ({selectedPlayers.length} selected, min 2)</label>
           <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0.5rem' }}>
             {players.map((p) => (
               <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem', cursor: 'pointer' }}>
@@ -127,8 +127,16 @@ function CreateTournamentForm({ players, onClose }: { players: { id: string; nam
   );
 }
 
-function TournamentCard({ tournament: t, getPlayer }: { tournament: Tournament; getPlayer: (id: string) => Player | undefined }) {
-  const [advancing, setAdvancing] = useState(false);
+function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: Tournament; allPlayers: Player[]; getPlayer: (id: string) => Player | undefined }) {
+  const [saving, setSaving] = useState(false);
+  const [pairings, setPairings] = useState<[string, string][]>([]);
+  const [pairingSelection, setPairingSelection] = useState<string[]>([]);
+  const [showPairingUI, setShowPairingUI] = useState(false);
+  const [addPlayerOpen, setAddPlayerOpen] = useState(false);
+
+  const activePlayerIds = t.activePlayerIds ?? t.playerIds ?? [];
+  const totalRounds = getTotalRounds(t.matches ?? []);
+  const currentRoundComplete = totalRounds === 0 || isRoundComplete(t.matches ?? [], totalRounds);
 
   const statusColors: Record<TournamentStatus, string> = {
     draft: 'badge-info',
@@ -140,27 +148,111 @@ function TournamentCard({ tournament: t, getPlayer }: { tournament: Tournament; 
     await updateTournament(t.id, { status: 'in_progress' });
   };
 
-  const selectWinner = async (round: number, matchIndex: number, winnerId: string) => {
-    setAdvancing(true);
+  // --- Player pool management ---
+  const addPlayerToTournament = async (playerId: string) => {
+    setSaving(true);
     try {
-      const updatedMatches = advanceWinner(t.matches, round, matchIndex, winnerId);
-      const totalRounds = getTotalRounds(updatedMatches);
-      const finalMatch = updatedMatches.find((m: TournamentMatch) => m.round === totalRounds);
-      const isComplete = finalMatch?.winnerId;
-
-      await updateTournament(t.id, {
-        matches: updatedMatches,
-        ...(isComplete ? { status: 'completed', championId: finalMatch.winnerId, completedAt: Date.now() } : {}),
-      });
+      const newActive = [...activePlayerIds, playerId];
+      const newAll = t.playerIds.includes(playerId) ? t.playerIds : [...t.playerIds, playerId];
+      await updateTournament(t.id, { activePlayerIds: newActive, playerIds: newAll });
     } finally {
-      setAdvancing(false);
+      setSaving(false);
+      setAddPlayerOpen(false);
     }
   };
 
-  const totalRounds = getTotalRounds(t.matches);
-  const pendingMatches = t.matches.filter(
-    (m: TournamentMatch) => m.status !== 'completed' && m.playerIds.length === 2
+  const removePlayerFromTournament = async (playerId: string) => {
+    // Block if player is in a pending match in current round
+    const currentRoundMatches = (t.matches ?? []).filter((m: TournamentMatch) => m.round === totalRounds && m.status !== 'completed');
+    const inPendingMatch = currentRoundMatches.some((m: TournamentMatch) => m.playerIds.includes(playerId));
+    if (inPendingMatch) {
+      alert('Cannot remove a player who is in a pending match. Complete or remove the round first.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const newActive = activePlayerIds.filter((id) => id !== playerId);
+      await updateTournament(t.id, { activePlayerIds: newActive });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // --- Pairing management ---
+  const togglePairingPlayer = (playerId: string) => {
+    setPairingSelection((prev) => {
+      if (prev.includes(playerId)) return prev.filter((id) => id !== playerId);
+      if (prev.length < 2) return [...prev, playerId];
+      return prev;
+    });
+  };
+
+  const addPairing = () => {
+    if (pairingSelection.length === 2) {
+      setPairings((prev) => [...prev, [pairingSelection[0], pairingSelection[1]]]);
+      setPairingSelection([]);
+    }
+  };
+
+  const removePairing = (index: number) => {
+    setPairings((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const pairedPlayerIds = new Set(pairings.flat());
+
+  const availableForPairing = activePlayerIds.filter((id) => !pairedPlayerIds.has(id));
+
+  const createRound = async () => {
+    if (pairings.length === 0) return;
+    setSaving(true);
+    try {
+      const updatedMatches = createFlexibleRound(t.matches ?? [], pairings);
+      await updateTournament(t.id, { matches: updatedMatches });
+      setPairings([]);
+      setPairingSelection([]);
+      setShowPairingUI(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // --- Winner selection ---
+  const selectWinner = async (round: number, matchIndex: number, winnerId: string) => {
+    setSaving(true);
+    try {
+      const updatedMatches = setFlexibleMatchWinner(t.matches ?? [], round, matchIndex, winnerId);
+      await updateTournament(t.id, { matches: updatedMatches });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // --- End tournament ---
+  const [showEndTournament, setShowEndTournament] = useState(false);
+  const [selectedChampion, setSelectedChampion] = useState('');
+
+  const endTournament = async () => {
+    if (!selectedChampion) return;
+    setSaving(true);
+    try {
+      await updateTournament(t.id, {
+        status: 'completed',
+        championId: selectedChampion,
+        completedAt: Date.now(),
+      });
+      setShowEndTournament(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Pending matches in the current round
+  const pendingMatches = (t.matches ?? []).filter(
+    (m: TournamentMatch) => m.round === totalRounds && m.status !== 'completed' && m.playerIds.length === 2
   );
+
+  // Players available to add (registered but not currently active)
+  const availableToAdd = allPlayers.filter((p) => !activePlayerIds.includes(p.id));
 
   return (
     <div className="card">
@@ -170,6 +262,7 @@ function TournamentCard({ tournament: t, getPlayer }: { tournament: Tournament; 
           <div className="flex gap-2 items-center mt-2">
             <span className="mode-tag">{GAME_MODE_LABELS[t.gameMode]}</span>
             <span className={`badge ${statusColors[t.status as TournamentStatus]}`}>{t.status}</span>
+            <span className="text-sm text-muted">{activePlayerIds.length} active players</span>
           </div>
         </div>
         <div className="flex gap-2">
@@ -182,31 +275,78 @@ function TournamentCard({ tournament: t, getPlayer }: { tournament: Tournament; 
         </div>
       </div>
 
+      {/* Player Pool Management */}
+      {(t.status === 'draft' || t.status === 'in_progress') && (
+        <div className="mt-4">
+          <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+            Active Players
+          </h4>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            {activePlayerIds.map((pid) => (
+              <span key={pid} style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                padding: '0.25rem 0.5rem', background: 'var(--bg-secondary)',
+                borderRadius: 'var(--radius)', fontSize: '0.85rem',
+              }}>
+                {getPlayer(pid)?.name ?? '?'}
+                <button
+                  onClick={() => removePlayerFromTournament(pid)}
+                  disabled={saving}
+                  style={{
+                    background: 'none', border: 'none', color: 'var(--danger)',
+                    cursor: 'pointer', padding: '0 0.2rem', fontSize: '1rem', lineHeight: 1,
+                  }}
+                  title="Remove from tournament"
+                >
+                  x
+                </button>
+              </span>
+            ))}
+          </div>
+          {availableToAdd.length > 0 && (
+            <div>
+              {addPlayerOpen ? (
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  {availableToAdd.map((p) => (
+                    <button key={p.id} className="btn btn-outline btn-sm" onClick={() => addPlayerToTournament(p.id)} disabled={saving}>
+                      + {p.name}
+                    </button>
+                  ))}
+                  <button className="btn btn-outline btn-sm" onClick={() => setAddPlayerOpen(false)}>Cancel</button>
+                </div>
+              ) : (
+                <button className="btn btn-outline btn-sm" onClick={() => setAddPlayerOpen(true)}>
+                  + Add Player
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Pending matches - select winners */}
       {t.status === 'in_progress' && pendingMatches.length > 0 && (
         <div className="mt-4">
           <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem' }}>
-            Pending Matches - Select Winners
+            Round {totalRounds} - Select Winners
           </h4>
-          {pendingMatches.map((match: any) => (
+          {pendingMatches.map((match: TournamentMatch) => (
             <div
               key={`${match.round}-${match.matchIndex}`}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                padding: '0.5rem 0',
-                borderBottom: '1px solid var(--border)',
+                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                padding: '0.5rem 0', borderBottom: '1px solid var(--border)',
               }}
             >
               <span className="text-sm text-muted" style={{ minWidth: '80px' }}>
-                {getRoundName(match.round, totalRounds)}
+                Match {match.matchIndex + 1}
               </span>
               {match.playerIds.map((pid: string) => (
                 <button
                   key={pid}
                   className="btn btn-outline btn-sm"
                   onClick={() => selectWinner(match.round, match.matchIndex, pid)}
-                  disabled={advancing}
+                  disabled={saving}
                 >
                   {getPlayer(pid)?.name ?? '?'}
                 </button>
@@ -216,9 +356,123 @@ function TournamentCard({ tournament: t, getPlayer }: { tournament: Tournament; 
         </div>
       )}
 
+      {/* Create new round */}
+      {t.status === 'in_progress' && currentRoundComplete && (
+        <div className="mt-4">
+          {!showPairingUI ? (
+            <button className="btn btn-primary btn-sm" onClick={() => setShowPairingUI(true)}>
+              + Create Round {totalRounds + 1}
+            </button>
+          ) : (
+            <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1rem' }}>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem' }}>
+                Create Round {totalRounds + 1} - Set Pairings
+              </h4>
+
+              {/* Current pairings */}
+              {pairings.length > 0 && (
+                <div style={{ marginBottom: '0.75rem' }}>
+                  {pairings.map(([p1, p2], i) => (
+                    <div key={i} style={{
+                      display: 'flex', alignItems: 'center', gap: '0.5rem',
+                      padding: '0.4rem 0', borderBottom: '1px solid var(--border)',
+                    }}>
+                      <span style={{ fontSize: '0.85rem' }}>
+                        {getPlayer(p1)?.name ?? '?'} vs {getPlayer(p2)?.name ?? '?'}
+                      </span>
+                      <button
+                        onClick={() => removePairing(i)}
+                        style={{
+                          background: 'none', border: 'none', color: 'var(--danger)',
+                          cursor: 'pointer', fontSize: '0.85rem',
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Select players to pair */}
+              {availableForPairing.length >= 2 && (
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                    Select 2 players to pair ({pairingSelection.length}/2 selected)
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {availableForPairing.map((pid) => (
+                      <button
+                        key={pid}
+                        className={`btn btn-sm ${pairingSelection.includes(pid) ? 'btn-primary' : 'btn-outline'}`}
+                        onClick={() => togglePairingPlayer(pid)}
+                      >
+                        {getPlayer(pid)?.name ?? '?'}
+                      </button>
+                    ))}
+                  </div>
+                  {pairingSelection.length === 2 && (
+                    <button className="btn btn-success btn-sm mt-2" onClick={addPairing}>
+                      Add Pairing
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {availableForPairing.length > 0 && availableForPairing.length < 2 && (
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+                  {availableForPairing.length} player(s) unpaired: {availableForPairing.map((pid) => getPlayer(pid)?.name ?? '?').join(', ')}
+                </p>
+              )}
+
+              <div className="flex gap-2">
+                <button className="btn btn-primary btn-sm" onClick={createRound} disabled={saving || pairings.length === 0}>
+                  {saving ? 'Creating...' : `Create Round (${pairings.length} match${pairings.length !== 1 ? 'es' : ''})`}
+                </button>
+                <button className="btn btn-outline btn-sm" onClick={() => { setShowPairingUI(false); setPairings([]); setPairingSelection([]); }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* End tournament */}
+      {t.status === 'in_progress' && totalRounds > 0 && (
+        <div className="mt-4">
+          {!showEndTournament ? (
+            <button className="btn btn-outline btn-sm" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={() => setShowEndTournament(true)}>
+              End Tournament
+            </button>
+          ) : (
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.85rem' }}>Select champion:</span>
+              <select
+                className="form-select"
+                style={{ width: 'auto', fontSize: '0.85rem' }}
+                value={selectedChampion}
+                onChange={(e) => setSelectedChampion(e.target.value)}
+              >
+                <option value="">-- Select --</option>
+                {activePlayerIds.map((pid) => (
+                  <option key={pid} value={pid}>{getPlayer(pid)?.name ?? '?'}</option>
+                ))}
+              </select>
+              <button className="btn btn-success btn-sm" onClick={endTournament} disabled={saving || !selectedChampion}>
+                Confirm
+              </button>
+              <button className="btn btn-outline btn-sm" onClick={() => setShowEndTournament(false)}>
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {t.championId && (
         <div className="mt-4" style={{ color: 'var(--gold)', fontWeight: 600 }}>
-          🏆 Champion: {getPlayer(t.championId)?.name ?? 'Unknown'}
+          Champion: {getPlayer(t.championId)?.name ?? 'Unknown'}
         </div>
       )}
     </div>

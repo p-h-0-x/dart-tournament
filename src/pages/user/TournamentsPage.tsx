@@ -39,7 +39,7 @@ export default function TournamentsPage() {
                   <div className="flex gap-2 items-center mt-2">
                     <span className="mode-tag">{GAME_MODE_LABELS[t.gameMode]}</span>
                     {statusBadge(t.status)}
-                    <span className="text-sm text-muted">{t.playerIds.length} players</span>
+                    <span className="text-sm text-muted">{(t.activePlayerIds ?? t.playerIds).length} players</span>
                   </div>
                 </div>
                 <div className="text-sm text-muted">
