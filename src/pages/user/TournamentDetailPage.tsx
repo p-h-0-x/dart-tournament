@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { GAME_MODE_LABELS } from '../../models/types';
 import { getRoundName, getTotalRounds } from '../../engines/tournament';
+import MobileBackHeader from '../../components/MobileBackHeader';
 
 export default function TournamentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -22,8 +23,9 @@ export default function TournamentDetailPage() {
 
   return (
     <div>
+      <MobileBackHeader to="/tournaments" label="Tournaments" />
       <div className="page-header">
-        <Link to="/tournaments" className="text-sm">&larr; Back to Tournaments</Link>
+        <Link to="/tournaments" className="text-sm desktop-back-link">&larr; Back to Tournaments</Link>
         <h1>{tournament.name}</h1>
         <div className="flex gap-2 items-center mt-2">
           <span className="mode-tag">{GAME_MODE_LABELS[tournament.gameMode]}</span>

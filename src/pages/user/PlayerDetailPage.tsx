@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { GAME_MODE_LABELS } from '../../models/types';
+import MobileBackHeader from '../../components/MobileBackHeader';
 
 export default function PlayerDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -37,8 +38,9 @@ export default function PlayerDetailPage() {
 
   return (
     <div>
+      <MobileBackHeader to="/players" label="Players" />
       <div className="page-header">
-        <Link to="/players" className="text-sm">&larr; Back to Players</Link>
+        <Link to="/players" className="text-sm desktop-back-link">&larr; Back to Players</Link>
         <h1>{player.name}</h1>
       </div>
 
