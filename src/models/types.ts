@@ -98,7 +98,8 @@ export interface Tournament {
   id: string;
   name: string;
   gameMode: GameMode;
-  playerIds: string[];
+  playerIds: string[];       // all players who ever participated (for stats)
+  activePlayerIds: string[]; // current player pool (can be modified mid-tournament)
   matches: TournamentMatch[];
   status: TournamentStatus;
   createdAt: number;
