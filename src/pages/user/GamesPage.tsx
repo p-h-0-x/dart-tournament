@@ -1,18 +1,79 @@
 import { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { GAME_MODE_LABELS, type GameMode } from '../../models/types';
+import { getRoundName, getTotalRounds } from '../../engines/tournament';
+
+interface GameEntry {
+  id: string;
+  date: number;
+  mode: GameMode;
+  playerIds: string[];
+  winnerPlayerId?: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  tournamentName?: string;
+}
 
 export default function GamesPage() {
-  const { games, getPlayer, loading } = useData();
+  const { games, tournaments, getPlayer, loading } = useData();
   const [modeFilter, setModeFilter] = useState<GameMode | 'all'>('all');
 
   if (loading) {
     return <div className="loading"><div className="spinner" /> Loading games...</div>;
   }
 
+  // Collect game IDs linked to tournament matches to avoid duplicates
+  const tournamentGameIds = new Set<string>();
+  for (const t of tournaments) {
+    for (const m of t.matches ?? []) {
+      if (m.gameId) tournamentGameIds.add(m.gameId);
+    }
+  }
+
+  // Build unified list: standalone games + tournament matches
+  const entries: GameEntry[] = [];
+
+  // Add standalone games (not linked to a tournament match)
+  for (const g of games) {
+    if (tournamentGameIds.has(g.id)) continue;
+    const winner = g.results.find((r) => r.rank === 1);
+    entries.push({
+      id: g.id,
+      date: g.completedAt ?? g.createdAt,
+      mode: g.mode,
+      playerIds: g.playerIds,
+      winnerPlayerId: winner?.playerId,
+      status: g.status,
+      tournamentName: g.tournamentId
+        ? tournaments.find((t) => t.id === g.tournamentId)?.name
+        : undefined,
+    });
+  }
+
+  // Add tournament matches (that don't have a linked game)
+  for (const t of tournaments) {
+    if (!t.matches?.length) continue;
+    const totalRounds = getTotalRounds(t.matches);
+    for (const m of t.matches) {
+      if (m.gameId) continue; // already added from games list
+      if (m.playerIds.length < 2) continue; // skip byes
+      entries.push({
+        id: `${t.id}-${m.round}-${m.matchIndex}`,
+        date: t.completedAt ?? t.createdAt,
+        mode: t.gameMode,
+        playerIds: m.playerIds,
+        winnerPlayerId: m.winnerId,
+        status: m.status,
+        tournamentName: `${t.name} - ${getRoundName(m.round, totalRounds)}`,
+      });
+    }
+  }
+
+  // Sort by date descending
+  entries.sort((a, b) => b.date - a.date);
+
   const filtered = modeFilter === 'all'
-    ? games
-    : games.filter((g) => g.mode === modeFilter);
+    ? entries
+    : entries.filter((e) => e.mode === modeFilter);
 
   return (
     <div>
@@ -58,30 +119,32 @@ export default function GamesPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((game) => {
-                  const winner = game.results.find((r) => r.rank === 1);
-                  return (
-                    <tr key={game.id}>
-                      <td className="text-sm text-muted">
-                        {new Date(game.createdAt).toLocaleDateString()}
-                      </td>
-                      <td><span className="mode-tag">{GAME_MODE_LABELS[game.mode]}</span></td>
-                      <td>{game.playerIds.map((pid) => getPlayer(pid)?.name ?? '?').join(', ')}</td>
-                      <td style={{ color: 'var(--success)', fontWeight: 600 }}>
-                        {winner ? getPlayer(winner.playerId)?.name : '-'}
-                      </td>
-                      <td>
-                        {game.status === 'completed' ? (
-                          <span className="badge badge-success">Done</span>
-                        ) : game.status === 'in_progress' ? (
-                          <span className="badge badge-warning">Live</span>
-                        ) : (
-                          <span className="badge badge-info">Pending</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {filtered.map((entry) => (
+                  <tr key={entry.id}>
+                    <td className="text-sm text-muted">
+                      {new Date(entry.date).toLocaleDateString()}
+                    </td>
+                    <td>
+                      <span className="mode-tag">{GAME_MODE_LABELS[entry.mode]}</span>
+                      {entry.tournamentName && (
+                        <div className="text-sm text-muted">{entry.tournamentName}</div>
+                      )}
+                    </td>
+                    <td>{entry.playerIds.map((pid) => getPlayer(pid)?.name ?? '?').join(', ')}</td>
+                    <td style={{ color: 'var(--success)', fontWeight: 600 }}>
+                      {entry.winnerPlayerId ? getPlayer(entry.winnerPlayerId)?.name : '-'}
+                    </td>
+                    <td>
+                      {entry.status === 'completed' ? (
+                        <span className="badge badge-success">Done</span>
+                      ) : entry.status === 'in_progress' ? (
+                        <span className="badge badge-warning">Live</span>
+                      ) : (
+                        <span className="badge badge-info">Pending</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

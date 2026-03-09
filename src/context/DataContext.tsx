@@ -26,7 +26,7 @@ export function computeLeaderboard(players: Player[], games: Game[], tournaments
   // Collect game IDs linked to tournament matches to avoid double-counting
   const tournamentGameIds = new Set<string>();
   for (const t of tournaments) {
-    for (const m of t.matches) {
+    for (const m of t.matches ?? []) {
       if (m.gameId) tournamentGameIds.add(m.gameId);
     }
   }
@@ -41,7 +41,7 @@ export function computeLeaderboard(players: Player[], games: Game[], tournaments
 
     // Wins/losses from tournament matches
     for (const t of tournaments) {
-      for (const m of t.matches) {
+      for (const m of t.matches ?? []) {
         if (m.status !== 'completed' || !m.winnerId || m.playerIds.length < 2 || !m.playerIds.includes(player.id)) continue;
         if (m.winnerId === player.id) wins++;
         else losses++;

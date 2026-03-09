@@ -2,7 +2,19 @@ import { Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 
 export default function LeaderboardPage() {
-  const { leaderboard, tournaments, loading } = useData();
+  const { leaderboard, games, tournaments, loading } = useData();
+
+  // Count unique completed games + completed tournament matches (with 2+ players, no linked game)
+  const completedGameCount = games.filter((g) => g.status === 'completed').length;
+  const tournamentGameIds = new Set<string>();
+  let tournamentMatchCount = 0;
+  for (const t of tournaments) {
+    for (const m of t.matches ?? []) {
+      if (m.gameId) tournamentGameIds.add(m.gameId);
+      else if (m.status === 'completed' && m.playerIds.length >= 2) tournamentMatchCount++;
+    }
+  }
+  const totalGamesPlayed = completedGameCount + tournamentMatchCount;
 
   if (loading) {
     return <div className="loading"><div className="spinner" /> Loading leaderboard...</div>;
@@ -21,7 +33,7 @@ export default function LeaderboardPage() {
           <div className="stat-label">Total Players</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{leaderboard.reduce((s, e) => s + e.gamesPlayed, 0)}</div>
+          <div className="stat-value">{totalGamesPlayed}</div>
           <div className="stat-label">Games Played</div>
         </div>
         <div className="stat-card">
