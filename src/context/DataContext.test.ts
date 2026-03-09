@@ -102,7 +102,11 @@ describe('computeLeaderboard', () => {
         name: 'Tournament 1',
         gameMode: 'classic',
         playerIds: ['p1', 'p2', 'p3'],
-        matches: [],
+        matches: [
+          { round: 1, matchIndex: 0, playerIds: ['p1', 'p2'], winnerId: 'p1', status: 'completed' },
+          { round: 1, matchIndex: 1, playerIds: ['p3'], winnerId: 'p3', status: 'completed' },
+          { round: 2, matchIndex: 0, playerIds: ['p1', 'p3'], winnerId: 'p1', status: 'completed' },
+        ],
         status: 'completed',
         createdAt: 1000,
         championId: 'p1',
@@ -112,7 +116,9 @@ describe('computeLeaderboard', () => {
         name: 'Tournament 2',
         gameMode: 'clock',
         playerIds: ['p1', 'p2'],
-        matches: [],
+        matches: [
+          { round: 1, matchIndex: 0, playerIds: ['p1', 'p2'], winnerId: 'p2', status: 'completed' },
+        ],
         status: 'completed',
         createdAt: 2000,
         championId: 'p2',
@@ -132,6 +138,46 @@ describe('computeLeaderboard', () => {
 
     expect(charlie.tournamentsWon).toBe(0);
     expect(charlie.tournamentsPlayed).toBe(1);
+  });
+
+  it('counts wins and losses from tournament matches', () => {
+    // Tournament: p1 beats p2, p3 gets bye, p1 beats p3 in final
+    const tournaments: Tournament[] = [
+      {
+        id: 't1',
+        name: 'Tournament 1',
+        gameMode: 'classic',
+        playerIds: ['p1', 'p2', 'p3'],
+        matches: [
+          { round: 1, matchIndex: 0, playerIds: ['p1', 'p2'], winnerId: 'p1', status: 'completed' },
+          { round: 1, matchIndex: 1, playerIds: ['p3'], winnerId: 'p3', status: 'completed' },
+          { round: 2, matchIndex: 0, playerIds: ['p1', 'p3'], winnerId: 'p1', status: 'completed' },
+        ],
+        status: 'completed',
+        createdAt: 1000,
+        championId: 'p1',
+      },
+    ];
+
+    const board = computeLeaderboard(players, [], tournaments);
+    const alice = board.find((e) => e.player.id === 'p1')!;
+    const bob = board.find((e) => e.player.id === 'p2')!;
+    const charlie = board.find((e) => e.player.id === 'p3')!;
+
+    // Alice won both her matches (vs Bob in round 1, vs Charlie in final)
+    expect(alice.wins).toBe(2);
+    expect(alice.losses).toBe(0);
+    expect(alice.gamesPlayed).toBe(2);
+
+    // Bob lost to Alice in round 1
+    expect(bob.wins).toBe(0);
+    expect(bob.losses).toBe(1);
+    expect(bob.gamesPlayed).toBe(1);
+
+    // Charlie got bye in round 1 (only 1 player, no opponent), lost to Alice in final
+    expect(charlie.wins).toBe(0);
+    expect(charlie.losses).toBe(1);
+    expect(charlie.gamesPlayed).toBe(1);
   });
 
   it('sorts by wins descending, then win rate', () => {
