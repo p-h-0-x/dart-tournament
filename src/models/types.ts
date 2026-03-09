@@ -3,13 +3,13 @@
 // ============================================================
 
 // --- Game Modes ---
-export type GameMode = 'classic' | 'yahtzee' | 'clock' | 'killer';
+export type GameMode = 'classic' | 'clock' | 'killer' | '301/501';
 
 export const GAME_MODE_LABELS: Record<GameMode, string> = {
   classic: 'Classic Halve-It',
-  yahtzee: 'Yahtzee Style',
   clock: 'Clock',
   killer: 'Killer',
+  '301/501': '301/501',
 };
 
 // --- Dart & Board ---
@@ -30,7 +30,7 @@ export function dartScore(d: Dart): number {
 // Clockwise board order
 export const BOARD_ORDER = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
 
-// --- Contracts (for Classic & Yahtzee) ---
+// --- Contracts (for Classic) ---
 export interface Contract {
   id: string;
   name: string;
