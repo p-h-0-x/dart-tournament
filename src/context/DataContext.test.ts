@@ -102,6 +102,7 @@ describe('computeLeaderboard', () => {
         name: 'Tournament 1',
         gameMode: 'classic',
         playerIds: ['p1', 'p2', 'p3'],
+        activePlayerIds: ['p1', 'p2', 'p3'],
         matches: [
           { round: 1, matchIndex: 0, playerIds: ['p1', 'p2'], winnerId: 'p1', status: 'completed' },
           { round: 1, matchIndex: 1, playerIds: ['p3'], winnerId: 'p3', status: 'completed' },
@@ -116,6 +117,7 @@ describe('computeLeaderboard', () => {
         name: 'Tournament 2',
         gameMode: 'clock',
         playerIds: ['p1', 'p2'],
+        activePlayerIds: ['p1', 'p2'],
         matches: [
           { round: 1, matchIndex: 0, playerIds: ['p1', 'p2'], winnerId: 'p2', status: 'completed' },
         ],
@@ -148,6 +150,7 @@ describe('computeLeaderboard', () => {
         name: 'Tournament 1',
         gameMode: 'classic',
         playerIds: ['p1', 'p2', 'p3'],
+        activePlayerIds: ['p1', 'p2', 'p3'],
         matches: [
           { round: 1, matchIndex: 0, playerIds: ['p1', 'p2'], winnerId: 'p1', status: 'completed' },
           { round: 1, matchIndex: 1, playerIds: ['p3'], winnerId: 'p3', status: 'completed' },
