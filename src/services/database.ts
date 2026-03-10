@@ -12,8 +12,15 @@ import {
   onSnapshot,
   type Unsubscribe,
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { auth, db } from './firebase';
 import type { Player, Game, Tournament } from '../models/types';
+
+async function requireAdmin(): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Authentication required');
+  const token = await user.getIdTokenResult();
+  if (token.claims.admin !== true) throw new Error('Admin access required');
+}
 
 // ---- Players ----
 const playersCol = () => collection(db, 'players');
@@ -24,6 +31,7 @@ export async function getPlayers(): Promise<Player[]> {
 }
 
 export async function addPlayer(name: string): Promise<Player> {
+  await requireAdmin();
   const ref = await addDoc(playersCol(), { name, createdAt: Date.now() });
   return { id: ref.id, name, createdAt: Date.now() };
 }
@@ -50,11 +58,13 @@ export async function getGamesByTournament(tournamentId: string): Promise<Game[]
 }
 
 export async function addGame(game: Omit<Game, 'id'>): Promise<string> {
+  await requireAdmin();
   const ref = await addDoc(gamesCol(), game);
   return ref.id;
 }
 
 export async function updateGame(id: string, data: Partial<Game>): Promise<void> {
+  await requireAdmin();
   await updateDoc(doc(db, 'games', id), data);
 }
 
@@ -79,11 +89,13 @@ export async function getTournament(id: string): Promise<Tournament | null> {
 }
 
 export async function addTournament(t: Omit<Tournament, 'id'>): Promise<string> {
+  await requireAdmin();
   const ref = await addDoc(tournamentsCol(), t);
   return ref.id;
 }
 
 export async function updateTournament(id: string, data: Partial<Tournament>): Promise<void> {
+  await requireAdmin();
   await updateDoc(doc(db, 'tournaments', id), data);
 }
 
@@ -101,6 +113,7 @@ export function onTournamentsChange(cb: (ts: Tournament[]) => void): Unsubscribe
 }
 
 export async function deleteTournament(id: string): Promise<void> {
+  await requireAdmin();
   const batch = writeBatch(db);
   const gamesSnap = await getDocs(
     query(gamesCol(), where('tournamentId', '==', id))
