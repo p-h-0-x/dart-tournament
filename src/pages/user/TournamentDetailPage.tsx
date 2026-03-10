@@ -1,8 +1,36 @@
+import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { GAME_MODE_LABELS } from '../../models/types';
-import { getTotalRounds, getEliminatedPlayerIds } from '../../engines/tournament';
+import type { TournamentMatch } from '../../models/types';
+import { getTotalRounds, getRoundName, getEliminatedPlayerIds } from '../../engines/tournament';
 import MobileBackHeader from '../../components/MobileBackHeader';
+
+function BracketMatch({ match, getPlayer }: { match: TournamentMatch; getPlayer: (id: string) => { name: string } | undefined }) {
+  const slots = match.playerIds.length > 0 ? match.playerIds : [null, null];
+  // Ensure at least 2 slots for display
+  const displaySlots = slots.length < 2 ? [...slots, null] : slots;
+
+  return (
+    <div className="bracket-match-wrapper">
+      <div className={`bracket-match${match.status === 'completed' ? ' match-completed' : ''}`}>
+        {displaySlots.map((pid, idx) => {
+          if (!pid) {
+            return <div key={`tbd-${idx}`} className="bracket-player tbd">TBD</div>;
+          }
+          const isWinner = match.winnerId === pid;
+          const isLoser = match.winnerId && match.winnerId !== pid;
+          return (
+            <div key={pid} className={`bracket-player${isWinner ? ' winner' : ''}${isLoser ? ' loser' : ''}`}>
+              <span>{getPlayer(pid)?.name ?? 'Unknown'}</span>
+              {isWinner && <span>✓</span>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function TournamentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,7 +47,6 @@ export default function TournamentDetailPage() {
 
   const matches = tournament.matches ?? [];
   const totalRounds = getTotalRounds(matches);
-  const rounds = Array.from({ length: totalRounds }, (_, i) => totalRounds - i); // reverse: latest first
   const activePlayerIds = tournament.activePlayerIds ?? tournament.playerIds ?? [];
   const eliminatedIds = getEliminatedPlayerIds(matches);
   const tournamentGames = games.filter((g) => g.tournamentId === tournament.id);
@@ -71,51 +98,36 @@ export default function TournamentDetailPage() {
         </div>
       </div>
 
-      {/* Rounds */}
+      {/* Bracket */}
       {totalRounds > 0 && (
         <div className="card mb-4">
-          <h2 className="card-title mb-4">Rounds</h2>
-          {rounds.map((round) => {
-            const roundMatches = matches.filter((m) => m.round === round);
-            const allComplete = roundMatches.every((m) => m.status === 'completed');
-            return (
-              <div key={round} style={{ marginBottom: '1.25rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  <h3 style={{ fontSize: '0.95rem', fontWeight: 600, margin: 0 }}>Round {round}</h3>
-                  {allComplete ? (
-                    <span className="badge badge-success">Complete</span>
-                  ) : (
-                    <span className="badge badge-warning">In Progress</span>
-                  )}
-                </div>
-                {roundMatches.map((match) => (
-                  <div
-                    key={`${match.round}-${match.matchIndex}`}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '0.75rem',
-                      padding: '0.5rem 0.75rem', borderBottom: '1px solid var(--border)',
-                    }}
-                  >
-                    {match.playerIds.map((pid, idx) => (
-                      <span key={pid}>
-                        {idx > 0 && <span className="text-muted" style={{ marginRight: '0.75rem' }}>vs</span>}
-                        <span style={{
-                          fontWeight: match.winnerId === pid ? 700 : 400,
-                          color: match.winnerId === pid ? 'var(--success)' : 'inherit',
-                        }}>
-                          {getPlayer(pid)?.name ?? 'Unknown'}
-                          {match.winnerId === pid && ' ✓'}
-                        </span>
-                      </span>
+          <h2 className="card-title mb-4">Bracket</h2>
+          <div className="bracket">
+            {Array.from({ length: totalRounds }, (_, i) => i + 1).map((round, roundIdx) => {
+              const roundMatches = matches
+                .filter((m) => m.round === round)
+                .sort((a, b) => a.matchIndex - b.matchIndex);
+              const roundName = getRoundName(round, totalRounds);
+
+              return (
+                <React.Fragment key={round}>
+                  <div className="bracket-round">
+                    <div className="bracket-round-title">{roundName}</div>
+                    {roundMatches.map((match) => (
+                      <BracketMatch key={`${match.round}-${match.matchIndex}`} match={match} getPlayer={getPlayer} />
                     ))}
-                    {match.status === 'pending' && (
-                      <span className="text-muted text-sm" style={{ marginLeft: 'auto' }}>Pending</span>
-                    )}
                   </div>
-                ))}
-              </div>
-            );
-          })}
+                  {roundIdx < totalRounds - 1 && (
+                    <div className="bracket-connector">
+                      {Array.from({ length: Math.ceil(roundMatches.length / 2) }, (_, i) => (
+                        <div key={i} className="bracket-connector-pair" />
+                      ))}
+                    </div>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
         </div>
       )}
 
