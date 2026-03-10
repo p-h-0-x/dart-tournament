@@ -307,7 +307,6 @@ tr:hover td {
 .bracket-round {
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
   min-width: 200px;
   flex-shrink: 0;
 }
@@ -320,14 +319,23 @@ tr:hover td {
   color: var(--text-muted);
   margin-bottom: 0.75rem;
   font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Pair container: wraps 2 adjacent matches that feed into 1 next-round match */
+.bracket-pair {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  position: relative;
 }
 
 .bracket-match-wrapper {
   display: flex;
   align-items: center;
   position: relative;
-  padding: 0.25rem 0;
   flex: 1;
+  padding: 0.25rem 0;
 }
 
 .bracket-match {
@@ -374,39 +382,10 @@ tr:hover td {
   font-style: italic;
 }
 
-/* Bracket connector lines — outgoing (right side) */
-/* Top of pair: L-shape going right and down */
-.bracket-match-wrapper.pair-top::after {
-  content: '';
-  position: absolute;
-  right: -1rem;
-  top: 50%;
-  bottom: 0;
-  width: 1rem;
-  border-top: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-  border-bottom: none;
-  border-left: none;
-  border-radius: 0 var(--radius) 0 0;
-}
+/* === Bracket connector lines === */
 
-/* Bottom of pair: L-shape going right and up */
-.bracket-match-wrapper.pair-bottom::after {
-  content: '';
-  position: absolute;
-  right: -1rem;
-  top: 0;
-  bottom: 50%;
-  width: 1rem;
-  border-bottom: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-  border-top: none;
-  border-left: none;
-  border-radius: 0 0 var(--radius) 0;
-}
-
-/* Solo match (odd last): just a horizontal line */
-.bracket-match-wrapper.pair-solo::after {
+/* Horizontal line from each match going right into the gap */
+.bracket-match-wrapper::after {
   content: '';
   position: absolute;
   right: -1rem;
@@ -416,12 +395,29 @@ tr:hover td {
   background: var(--border);
 }
 
-/* Hide outgoing lines on last round */
-.bracket-round:last-child .bracket-match-wrapper::after {
-  display: none;
+/* Vertical line on the pair connecting the two match lines */
+.bracket-pair::before {
+  content: '';
+  position: absolute;
+  right: -1rem;
+  top: 25%;
+  bottom: 25%;
+  width: 1px;
+  background: var(--border);
 }
 
-/* Bracket connector lines — incoming (left side) */
+/* Horizontal line from pair midpoint going right to the next round */
+.bracket-pair::after {
+  content: '';
+  position: absolute;
+  right: -2rem;
+  top: calc(50% - 0.5px);
+  width: 1rem;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Incoming horizontal line on each match from the left */
 .bracket-match-wrapper::before {
   content: '';
   position: absolute;
@@ -432,8 +428,20 @@ tr:hover td {
   background: var(--border);
 }
 
-/* Hide incoming lines on first round */
-.bracket-round:first-child .bracket-match-wrapper::before {
+/* Solo pair (odd last match): no vertical, just pass-through horizontal */
+.bracket-pair-solo::before {
+  display: none;
+}
+
+/* Hide outgoing connectors on last round */
+.bracket-round-last .bracket-match-wrapper::after,
+.bracket-round-last .bracket-pair::before,
+.bracket-round-last .bracket-pair::after {
+  display: none;
+}
+
+/* Hide incoming connectors on first round */
+.bracket-round-first .bracket-match-wrapper::before {
   display: none;
 }
 
