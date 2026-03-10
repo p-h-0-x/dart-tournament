@@ -1,4 +1,3 @@
-import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { GAME_MODE_LABELS } from '../../models/types';
@@ -9,17 +8,15 @@ import MobileBackHeader from '../../components/MobileBackHeader';
 function BracketMatch({
   match,
   getPlayer,
-  pairPosition,
 }: {
   match: TournamentMatch;
   getPlayer: (id: string) => { name: string } | undefined;
-  pairPosition: 'top' | 'bottom' | 'solo';
 }) {
   const slots = match.playerIds.length > 0 ? match.playerIds : [null, null];
   const displaySlots = slots.length < 2 ? [...slots, null] : slots;
 
   return (
-    <div className={`bracket-match-wrapper pair-${pairPosition}`}>
+    <div className="bracket-match-wrapper">
       <div className={`bracket-match${match.status === 'completed' ? ' match-completed' : ''}`}>
         {displaySlots.map((pid, idx) => {
           if (!pid) {
@@ -37,6 +34,14 @@ function BracketMatch({
       </div>
     </div>
   );
+}
+
+function chunkPairs<T>(arr: T[]): T[][] {
+  const pairs: T[][] = [];
+  for (let i = 0; i < arr.length; i += 2) {
+    pairs.push(arr.slice(i, i + 2));
+  }
+  return pairs;
 }
 
 export default function TournamentDetailPage() {
@@ -115,22 +120,30 @@ export default function TournamentDetailPage() {
                 .filter((m) => m.round === round)
                 .sort((a, b) => a.matchIndex - b.matchIndex);
               const roundName = getRoundName(round, totalRounds);
+              const isLast = round === totalRounds;
+              const isFirst = round === 1;
+              const pairs = chunkPairs(roundMatches);
 
               return (
-                <div key={round} className="bracket-round">
+                <div
+                  key={round}
+                  className={`bracket-round${isFirst ? ' bracket-round-first' : ''}${isLast ? ' bracket-round-last' : ''}`}
+                >
                   <div className="bracket-round-title">{roundName}</div>
-                  {roundMatches.map((match, idx) => {
-                    const isLastInOddList = idx === roundMatches.length - 1 && roundMatches.length % 2 === 1;
-                    const pairPosition = isLastInOddList ? 'solo' : idx % 2 === 0 ? 'top' : 'bottom';
-                    return (
-                      <BracketMatch
-                        key={`${match.round}-${match.matchIndex}`}
-                        match={match}
-                        getPlayer={getPlayer}
-                        pairPosition={pairPosition}
-                      />
-                    );
-                  })}
+                  {pairs.map((pair, pairIdx) => (
+                    <div
+                      key={pairIdx}
+                      className={`bracket-pair${pair.length === 1 ? ' bracket-pair-solo' : ''}`}
+                    >
+                      {pair.map((match) => (
+                        <BracketMatch
+                          key={`${match.round}-${match.matchIndex}`}
+                          match={match}
+                          getPlayer={getPlayer}
+                        />
+                      ))}
+                    </div>
+                  ))}
                 </div>
               );
             })}
