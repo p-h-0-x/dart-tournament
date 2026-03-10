@@ -299,6 +299,7 @@ tr:hover td {
 /* Bracket */
 .bracket {
   display: flex;
+  gap: 2rem;
   overflow-x: auto;
   padding: 1rem 0;
 }
@@ -325,7 +326,7 @@ tr:hover td {
   display: flex;
   align-items: center;
   position: relative;
-  padding: 0.5rem 0;
+  padding: 0.25rem 0;
   flex: 1;
 }
 
@@ -373,52 +374,39 @@ tr:hover td {
   font-style: italic;
 }
 
-.bracket-player .seed {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  margin-right: 0.5rem;
-  min-width: 1rem;
-}
-
-/* Bracket connector lines */
-.bracket-connector {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  width: 2rem;
-  flex-shrink: 0;
-}
-
-.bracket-connector-pair {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  position: relative;
-}
-
-.bracket-connector-pair::before {
+/* Bracket connector lines — outgoing (right side) */
+/* Top of pair: L-shape going right and down */
+.bracket-match-wrapper.pair-top::after {
   content: '';
   position: absolute;
-  right: 0;
-  top: 25%;
-  bottom: 25%;
-  width: 1px;
-  background: var(--border);
-}
-
-.bracket-connector-pair::after {
-  content: '';
-  position: absolute;
-  right: 0;
+  right: -1rem;
   top: 50%;
-  width: 50%;
-  height: 1px;
-  background: var(--border);
+  bottom: 0;
+  width: 1rem;
+  border-top: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  border-bottom: none;
+  border-left: none;
+  border-radius: 0 var(--radius) 0 0;
 }
 
-/* Horizontal lines from matches to connector */
-.bracket-match-wrapper::after {
+/* Bottom of pair: L-shape going right and up */
+.bracket-match-wrapper.pair-bottom::after {
+  content: '';
+  position: absolute;
+  right: -1rem;
+  top: 0;
+  bottom: 50%;
+  width: 1rem;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  border-top: none;
+  border-left: none;
+  border-radius: 0 0 var(--radius) 0;
+}
+
+/* Solo match (odd last): just a horizontal line */
+.bracket-match-wrapper.pair-solo::after {
   content: '';
   position: absolute;
   right: -1rem;
@@ -428,11 +416,12 @@ tr:hover td {
   background: var(--border);
 }
 
+/* Hide outgoing lines on last round */
 .bracket-round:last-child .bracket-match-wrapper::after {
   display: none;
 }
 
-/* Incoming line from connector to match */
+/* Bracket connector lines — incoming (left side) */
 .bracket-match-wrapper::before {
   content: '';
   position: absolute;
@@ -443,6 +432,7 @@ tr:hover td {
   background: var(--border);
 }
 
+/* Hide incoming lines on first round */
 .bracket-round:first-child .bracket-match-wrapper::before {
   display: none;
 }
