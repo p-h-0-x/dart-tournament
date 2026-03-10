@@ -6,13 +6,20 @@ import type { TournamentMatch } from '../../models/types';
 import { getTotalRounds, getRoundName, getEliminatedPlayerIds } from '../../engines/tournament';
 import MobileBackHeader from '../../components/MobileBackHeader';
 
-function BracketMatch({ match, getPlayer }: { match: TournamentMatch; getPlayer: (id: string) => { name: string } | undefined }) {
+function BracketMatch({
+  match,
+  getPlayer,
+  pairPosition,
+}: {
+  match: TournamentMatch;
+  getPlayer: (id: string) => { name: string } | undefined;
+  pairPosition: 'top' | 'bottom' | 'solo';
+}) {
   const slots = match.playerIds.length > 0 ? match.playerIds : [null, null];
-  // Ensure at least 2 slots for display
   const displaySlots = slots.length < 2 ? [...slots, null] : slots;
 
   return (
-    <div className="bracket-match-wrapper">
+    <div className={`bracket-match-wrapper pair-${pairPosition}`}>
       <div className={`bracket-match${match.status === 'completed' ? ' match-completed' : ''}`}>
         {displaySlots.map((pid, idx) => {
           if (!pid) {
@@ -103,28 +110,28 @@ export default function TournamentDetailPage() {
         <div className="card mb-4">
           <h2 className="card-title mb-4">Bracket</h2>
           <div className="bracket">
-            {Array.from({ length: totalRounds }, (_, i) => i + 1).map((round, roundIdx) => {
+            {Array.from({ length: totalRounds }, (_, i) => i + 1).map((round) => {
               const roundMatches = matches
                 .filter((m) => m.round === round)
                 .sort((a, b) => a.matchIndex - b.matchIndex);
               const roundName = getRoundName(round, totalRounds);
 
               return (
-                <React.Fragment key={round}>
-                  <div className="bracket-round">
-                    <div className="bracket-round-title">{roundName}</div>
-                    {roundMatches.map((match) => (
-                      <BracketMatch key={`${match.round}-${match.matchIndex}`} match={match} getPlayer={getPlayer} />
-                    ))}
-                  </div>
-                  {roundIdx < totalRounds - 1 && (
-                    <div className="bracket-connector">
-                      {Array.from({ length: Math.ceil(roundMatches.length / 2) }, (_, i) => (
-                        <div key={i} className="bracket-connector-pair" />
-                      ))}
-                    </div>
-                  )}
-                </React.Fragment>
+                <div key={round} className="bracket-round">
+                  <div className="bracket-round-title">{roundName}</div>
+                  {roundMatches.map((match, idx) => {
+                    const isLastInOddList = idx === roundMatches.length - 1 && roundMatches.length % 2 === 1;
+                    const pairPosition = isLastInOddList ? 'solo' : idx % 2 === 0 ? 'top' : 'bottom';
+                    return (
+                      <BracketMatch
+                        key={`${match.round}-${match.matchIndex}`}
+                        match={match}
+                        getPlayer={getPlayer}
+                        pairPosition={pairPosition}
+                      />
+                    );
+                  })}
+                </div>
               );
             })}
           </div>
