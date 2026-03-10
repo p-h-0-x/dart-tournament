@@ -159,11 +159,14 @@ function ActiveGameCard({ game, getPlayer }: {
   const [saving, setSaving] = useState(false);
 
   const handleFinish = async () => {
-    const results: GameResult[] = game.playerIds.map((pid: string) => ({
-      playerId: pid,
-      score: parseInt(scores[pid]) || 0,
-      rank: 0,
-    }));
+    const results: GameResult[] = game.playerIds.map((pid: string) => {
+      const score = parseInt(scores[pid]) || 0;
+      return {
+        playerId: pid,
+        score: Math.max(0, Math.min(score, 999999)),
+        rank: 0,
+      };
+    });
 
     // Sort by score descending and assign ranks
     results.sort((a, b) => b.score - a.score);
@@ -196,6 +199,8 @@ function ActiveGameCard({ game, getPlayer }: {
               type="number"
               className="form-input"
               placeholder="Score"
+              min="0"
+              max="999999"
               value={scores[pid]}
               onChange={(e) => setScores((prev) => ({ ...prev, [pid]: e.target.value }))}
             />

@@ -58,6 +58,7 @@ function CreateTournamentForm({ players, onClose }: { players: { id: string; nam
 
   const handleCreate = async () => {
     if (!name.trim()) return setError('Name required');
+    if (name.trim().length > 100) return setError('Tournament name must be 100 characters or less');
     if (selectedPlayers.length < 2) return setError('Need at least 2 players');
     setCreating(true);
     setError('');
@@ -73,7 +74,8 @@ function CreateTournamentForm({ players, onClose }: { players: { id: string; nam
       });
       onClose();
     } catch (e) {
-      setError(String(e));
+      console.error('Failed to create tournament:', e);
+      setError('Failed to create tournament. Please try again.');
     } finally {
       setCreating(false);
     }
@@ -86,7 +88,7 @@ function CreateTournamentForm({ players, onClose }: { players: { id: string; nam
 
         <div className="form-group">
           <label className="form-label">Tournament Name</label>
-          <input className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Spring Championship 2026" />
+          <input className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Spring Championship 2026" maxLength={100} />
         </div>
 
         <div className="form-group">
@@ -152,7 +154,8 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
     try {
       await deleteTournament(t.id);
     } catch (e) {
-      alert('Failed to delete tournament: ' + String(e));
+      console.error('Failed to delete tournament:', e);
+      alert('Failed to delete tournament. Please try again.');
       setDeleting(false);
       setShowDeleteConfirm(false);
     }
