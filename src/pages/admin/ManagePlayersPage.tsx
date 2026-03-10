@@ -11,6 +11,10 @@ export default function ManagePlayersPage() {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    if (name.trim().length > 50) {
+      setMessage('Player name must be 50 characters or less');
+      return;
+    }
     setAdding(true);
     setMessage('');
     try {
@@ -43,6 +47,7 @@ export default function ManagePlayersPage() {
             placeholder="Player name"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            maxLength={50}
             style={{ maxWidth: '300px' }}
           />
           <button type="submit" className="btn btn-primary" disabled={adding}>
