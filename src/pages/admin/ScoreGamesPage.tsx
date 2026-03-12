@@ -84,6 +84,7 @@ function CreateGameForm({ players, onClose }: { players: { id: string; name: str
   const [gameMode, setGameMode] = useState<GameMode>('classic');
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
+  const [error, setError] = useState('');
 
   const togglePlayer = (id: string) => {
     setSelectedPlayers((prev) =>
@@ -94,6 +95,7 @@ function CreateGameForm({ players, onClose }: { players: { id: string; name: str
   const handleCreate = async () => {
     if (selectedPlayers.length < 2) return;
     setCreating(true);
+    setError('');
     try {
       await addGame({
         mode: gameMode,
@@ -103,6 +105,8 @@ function CreateGameForm({ players, onClose }: { players: { id: string; name: str
         createdAt: Date.now(),
       });
       onClose();
+    } catch {
+      setError('Failed to create game. You may not have permission.');
     } finally {
       setCreating(false);
     }
@@ -138,6 +142,7 @@ function CreateGameForm({ players, onClose }: { players: { id: string; name: str
           </div>
         </div>
 
+        {error && <p className="text-sm" style={{ color: 'var(--danger)', marginBottom: '0.5rem' }}>{error}</p>}
         <div className="modal-actions">
           <button className="btn btn-outline" onClick={onClose}>Cancel</button>
           <button className="btn btn-primary" onClick={handleCreate} disabled={creating || selectedPlayers.length < 2}>
@@ -157,6 +162,7 @@ function ActiveGameCard({ game, getPlayer }: {
     Object.fromEntries(game.playerIds.map((pid: string) => [pid, '']))
   );
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   const handleFinish = async () => {
     const results: GameResult[] = game.playerIds.map((pid: string) => {
@@ -173,12 +179,15 @@ function ActiveGameCard({ game, getPlayer }: {
     results.forEach((r, i) => { r.rank = i + 1; });
 
     setSaving(true);
+    setError('');
     try {
       await updateGame(game.id, {
         results,
         status: 'completed',
         completedAt: Date.now(),
       });
+    } catch {
+      setError('Failed to save game. You may not have permission.');
     } finally {
       setSaving(false);
     }
@@ -208,6 +217,7 @@ function ActiveGameCard({ game, getPlayer }: {
         ))}
       </div>
 
+      {error && <p className="text-sm mt-2" style={{ color: 'var(--danger)' }}>{error}</p>}
       <button className="btn btn-success btn-sm mt-4" onClick={handleFinish} disabled={saving}>
         {saving ? 'Saving...' : 'Finish Game'}
       </button>
