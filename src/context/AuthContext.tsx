@@ -27,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
+        setLoading(true);
         const tokenResult = await u.getIdTokenResult(true);
         setIsAdmin(tokenResult.claims.admin === true);
       } else {
