@@ -20,7 +20,10 @@ import ScoreGamesPage from './pages/admin/ScoreGamesPage';
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { isAdmin, loading } = useAuth();
   if (loading) return <div className="loading"><div className="spinner" /> Loading...</div>;
-  if (!isAdmin) return <Navigate to="/admin/login" replace />;
+  if (!isAdmin){
+    console.log('AdminRoute blocked: not admin');
+    return <Navigate to="/admin/login" replace />;
+  } 
   return <>{children}</>;
 }
 
