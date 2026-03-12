@@ -27,9 +27,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
-        setLoading(true);
-        const tokenResult = await u.getIdTokenResult(true);
-        setIsAdmin(tokenResult.claims.admin === true);
+        try {
+          const tokenResult = await u.getIdTokenResult();
+          setIsAdmin(tokenResult.claims.admin === true);
+        } catch {
+          setIsAdmin(false);
+        }
       } else {
         setIsAdmin(false);
       }
@@ -39,7 +42,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    const { user: u } = await signInWithEmailAndPassword(auth, email, password);
+    const tokenResult = await u.getIdTokenResult(true);
+    setIsAdmin(tokenResult.claims.admin === true);
   };
 
   const logout = async () => {

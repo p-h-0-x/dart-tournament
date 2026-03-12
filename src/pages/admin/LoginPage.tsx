@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -10,10 +10,9 @@ export default function LoginPage() {
   const { login, isAdmin } = useAuth();
   const navigate = useNavigate();
 
-  if (isAdmin) {
-    navigate('/admin/tournaments');
-    return null;
-  }
+  useEffect(() => {
+    if (isAdmin) navigate('/admin/tournaments', { replace: true });
+  }, [isAdmin, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
