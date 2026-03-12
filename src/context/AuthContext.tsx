@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const { user: u } = await signInWithEmailAndPassword(auth, email, password);
-    const tokenResult = await u.getIdTokenResult(true);
+    const tokenResult = await u.getIdTokenResult();
     setIsAdmin(tokenResult.claims.admin === true);
   };
 

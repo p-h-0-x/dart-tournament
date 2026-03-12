@@ -18,7 +18,7 @@ import type { Player, Game, Tournament } from '../models/types';
 async function requireAdmin(): Promise<void> {
   const user = auth.currentUser;
   if (!user) throw new Error('Authentication required');
-  const token = await user.getIdTokenResult(true);
+  const token = await user.getIdTokenResult();
   if (token.claims.admin !== true) throw new Error('Admin access required');
 }
 
