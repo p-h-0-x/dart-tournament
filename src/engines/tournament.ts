@@ -180,6 +180,51 @@ export function createFlexibleRound(
 }
 
 /**
+ * Add a single match to a specific round.
+ * If no round is specified, adds to the current (latest) round, or round 1 if no matches exist.
+ * Validates that players are not already in a match in the same round.
+ * Returns the full matches array (existing + new match).
+ */
+export function addMatchToRound(
+  existingMatches: TournamentMatch[],
+  playerIds: string[],
+  round?: number
+): TournamentMatch[] {
+  if (playerIds.length < 2) throw new Error('Each match must have at least 2 players');
+
+  const seen = new Set<string>();
+  for (const pid of playerIds) {
+    if (!pid) throw new Error('Player ID cannot be empty');
+    if (seen.has(pid)) throw new Error(`Duplicate player ${pid} in match`);
+    seen.add(pid);
+  }
+
+  const targetRound = round ?? (existingMatches.length === 0
+    ? 1
+    : Math.max(...existingMatches.map((m) => m.round)));
+
+  // Check that none of these players are already in a match in the target round
+  const roundMatches = existingMatches.filter((m) => m.round === targetRound);
+  for (const pid of playerIds) {
+    const existing = roundMatches.find((m) => m.playerIds.includes(pid));
+    if (existing) {
+      throw new Error(`Player ${pid} is already in a match in round ${targetRound}`);
+    }
+  }
+
+  const nextMatchIndex = roundMatches.length;
+
+  const newMatch: TournamentMatch = {
+    round: targetRound,
+    matchIndex: nextMatchIndex,
+    playerIds: [...playerIds],
+    status: 'pending',
+  };
+
+  return [...existingMatches, newMatch];
+}
+
+/**
  * Set the winner of a match in a flexible tournament.
  * No next-round propagation (rounds are created manually).
  */

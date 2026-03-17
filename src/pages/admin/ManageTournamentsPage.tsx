@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { addTournament, updateTournament, deleteTournament } from '../../services/database';
-import { createFlexibleRound, setFlexibleMatchWinner, isRoundComplete, getTotalRounds, getEliminatedPlayerIds } from '../../engines/tournament';
+import { addMatchToRound, setFlexibleMatchWinner, isRoundComplete, getTotalRounds, getEliminatedPlayerIds } from '../../engines/tournament';
 import { GAME_MODE_LABELS, type GameMode, type TournamentStatus, type Tournament, type TournamentMatch, type Player } from '../../models/types';
 
 export default function ManageTournamentsPage() {
@@ -131,9 +131,8 @@ function CreateTournamentForm({ players, onClose }: { players: { id: string; nam
 
 function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: Tournament; allPlayers: Player[]; getPlayer: (id: string) => Player | undefined }) {
   const [saving, setSaving] = useState(false);
-  const [groups, setGroups] = useState<string[][]>([]);
-  const [groupSelection, setGroupSelection] = useState<string[]>([]);
-  const [showPairingUI, setShowPairingUI] = useState(false);
+  const [matchSelection, setMatchSelection] = useState<string[]>([]);
+  const [showMatchUI, setShowMatchUI] = useState(false);
   const [addPlayerOpen, setAddPlayerOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -195,37 +194,26 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
     }
   };
 
-  // --- Group/pairing management ---
-  const toggleGroupPlayer = (playerId: string) => {
-    setGroupSelection((prev) =>
+  // --- Match planning ---
+  const toggleMatchPlayer = (playerId: string) => {
+    setMatchSelection((prev) =>
       prev.includes(playerId) ? prev.filter((id) => id !== playerId) : [...prev, playerId]
     );
   };
 
-  const addGroup = () => {
-    if (groupSelection.length >= 2) {
-      setGroups((prev) => [...prev, [...groupSelection]]);
-      setGroupSelection([]);
-    }
-  };
+  // The round we're currently planning matches for
+  const planningRound = totalRounds === 0 ? 1 : (currentRoundComplete ? totalRounds + 1 : totalRounds);
+  const planningRoundMatches = (t.matches ?? []).filter((m: TournamentMatch) => m.round === planningRound);
+  const playersInPlanningRound = new Set(planningRoundMatches.flatMap((m: TournamentMatch) => m.playerIds));
+  const availableForMatch = activePlayerIds.filter((id) => !playersInPlanningRound.has(id));
 
-  const removeGroup = (index: number) => {
-    setGroups((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const groupedPlayerIds = new Set(groups.flat());
-
-  const availableForGrouping = activePlayerIds.filter((id) => !groupedPlayerIds.has(id));
-
-  const createRound = async () => {
-    if (groups.length === 0) return;
+  const addSingleMatch = async () => {
+    if (matchSelection.length < 2) return;
     setSaving(true);
     try {
-      const updatedMatches = createFlexibleRound(t.matches ?? [], groups);
+      const updatedMatches = addMatchToRound(t.matches ?? [], matchSelection, planningRound);
       await updateTournament(t.id, { matches: updatedMatches });
-      setGroups([]);
-      setGroupSelection([]);
-      setShowPairingUI(false);
+      setMatchSelection([]);
     } finally {
       setSaving(false);
     }
@@ -383,96 +371,87 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
         </div>
       )}
 
-      {/* Create new round */}
-      {t.status === 'in_progress' && currentRoundComplete && (
+      {/* Add match to round */}
+      {t.status === 'in_progress' && (
         <div className="mt-4">
-          {!showPairingUI ? (
-            <button className="btn btn-primary btn-sm" onClick={() => setShowPairingUI(true)}>
-              + Create Round {totalRounds + 1}
+          {!showMatchUI ? (
+            <button className="btn btn-primary btn-sm" onClick={() => setShowMatchUI(true)}>
+              + Add Match to Round {planningRound}
             </button>
           ) : (
             <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1rem' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                Round {totalRounds + 1} — Match Setup
+                Round {planningRound} — Add Match
               </h4>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem', marginTop: 0 }}>
-                Select 2 or more players for each match, then confirm. Repeat to create all matches for this round.
+                Select 2 or more players for a match, then confirm. Each match is saved immediately.
               </p>
 
-              {/* Confirmed matches */}
-              {groups.length > 0 && (
+              {/* Existing matches in this round */}
+              {planningRoundMatches.length > 0 && (
                 <div style={{ marginBottom: '0.75rem' }}>
-                  <p style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Matches:</p>
-                  {groups.map((group, i) => (
+                  <p style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Planned matches:</p>
+                  {planningRoundMatches.map((match: TournamentMatch, i: number) => (
                     <div key={i} style={{
                       display: 'flex', alignItems: 'center', gap: '0.5rem',
                       padding: '0.4rem 0.5rem', borderBottom: '1px solid var(--border)',
                       background: 'var(--bg-secondary)', borderRadius: 'var(--radius)', marginBottom: '0.25rem',
                     }}>
                       <span style={{ fontSize: '0.85rem', flex: 1 }}>
-                        {group.map((pid) => getPlayer(pid)?.name ?? '?').join(' vs ')}
+                        {match.playerIds.map((pid: string) => getPlayer(pid)?.name ?? '?').join(' vs ')}
                       </span>
-                      <button
-                        onClick={() => removeGroup(i)}
-                        style={{
-                          background: 'none', border: 'none', color: 'var(--danger)',
-                          cursor: 'pointer', fontSize: '0.85rem',
-                        }}
-                      >
-                        Remove
-                      </button>
+                      <span className={`badge ${match.status === 'completed' ? 'badge-success' : 'badge-warning'}`} style={{ fontSize: '0.75rem' }}>
+                        {match.status === 'completed' ? `Winner: ${getPlayer(match.winnerId!)?.name ?? '?'}` : 'Pending'}
+                      </span>
                     </div>
                   ))}
                 </div>
               )}
 
               {/* Select players for a match */}
-              {availableForGrouping.length >= 2 && (
+              {availableForMatch.length >= 2 && (
                 <div style={{ marginBottom: '0.75rem' }}>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                    Tap players to add them to a match ({groupSelection.length} selected):
+                    Tap players to add them to a match ({matchSelection.length} selected):
                   </p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    {availableForGrouping.map((pid) => {
+                    {availableForMatch.map((pid) => {
                       const isElim = eliminatedIds.has(pid);
                       return (
                         <button
                           key={pid}
-                          className={`btn btn-sm ${groupSelection.includes(pid) ? 'btn-primary' : 'btn-outline'}`}
-                          onClick={() => toggleGroupPlayer(pid)}
-                          style={{ textDecoration: isElim ? 'line-through' : 'none' }}
+                          className={`btn btn-sm ${matchSelection.includes(pid) ? 'btn-primary' : 'btn-outline'}`}
+                          onClick={() => toggleMatchPlayer(pid)}
+                          style={{ textDecoration: isElim ? 'line-through' : 'none', opacity: isElim ? 0.5 : 1 }}
                         >
                           {getPlayer(pid)?.name ?? '?'}
                         </button>
                       );
                     })}
                   </div>
-                  {groupSelection.length >= 2 && (
-                    <button className="btn btn-success btn-sm mt-2" onClick={addGroup}>
-                      Confirm Match ({groupSelection.length} players)
+                  {matchSelection.length >= 2 && (
+                    <button className="btn btn-success btn-sm mt-2" onClick={addSingleMatch} disabled={saving}>
+                      {saving ? 'Adding...' : `Add Match (${matchSelection.length} players)`}
                     </button>
                   )}
                 </div>
               )}
 
-              {availableForGrouping.length === 1 && (
+              {availableForMatch.length === 1 && (
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                  1 player without a match: {getPlayer(availableForGrouping[0])?.name ?? '?'} (sits out this round)
+                  1 player without a match: {getPlayer(availableForMatch[0])?.name ?? '?'} (sits out this round)
                 </p>
               )}
 
-              {availableForGrouping.length === 0 && groups.length > 0 && (
+              {availableForMatch.length === 0 && planningRoundMatches.length > 0 && (
                 <p style={{ fontSize: '0.8rem', color: 'var(--success)', marginBottom: '0.75rem' }}>
                   All players assigned!
                 </p>
               )}
 
               <div className="flex gap-2">
-                <button className="btn btn-primary btn-sm" onClick={createRound} disabled={saving || groups.length === 0}>
-                  {saving ? 'Creating...' : `Create Round ${totalRounds + 1} (${groups.length} match${groups.length !== 1 ? 'es' : ''})`}
-                </button>
-                <button className="btn btn-outline btn-sm" onClick={() => { setShowPairingUI(false); setGroups([]); setGroupSelection([]); }}>
-                  Cancel
+                <button className="btn btn-outline btn-sm" onClick={() => { setShowMatchUI(false); setMatchSelection([]); }}>
+                  Close
                 </button>
               </div>
             </div>
