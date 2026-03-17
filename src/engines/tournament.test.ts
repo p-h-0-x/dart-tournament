@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateBracket, advanceWinner, getRoundName, getTotalRounds, createFlexibleRound, setFlexibleMatchWinner, isRoundComplete } from './tournament';
+import { generateBracket, advanceWinner, getRoundName, getTotalRounds, createFlexibleRound, setFlexibleMatchWinner, isRoundComplete, addMatchToRound } from './tournament';
 
 describe('generateBracket', () => {
   it('throws with fewer than 3 players', () => {
@@ -316,6 +316,77 @@ describe('setFlexibleMatchWinner', () => {
   it('throws when winnerId is not in the match', () => {
     const matches = createFlexibleRound([], [['a', 'b']]);
     expect(() => setFlexibleMatchWinner(matches, 1, 0, 'c')).toThrow('Player c is not in this match');
+  });
+});
+
+describe('addMatchToRound', () => {
+  it('creates first match in round 1 when no matches exist', () => {
+    const matches = addMatchToRound([], ['a', 'b']);
+    expect(matches).toHaveLength(1);
+    expect(matches[0].round).toBe(1);
+    expect(matches[0].matchIndex).toBe(0);
+    expect(matches[0].playerIds).toEqual(['a', 'b']);
+    expect(matches[0].status).toBe('pending');
+  });
+
+  it('adds a second match to the same round', () => {
+    let matches = addMatchToRound([], ['a', 'b']);
+    matches = addMatchToRound(matches, ['c', 'd']);
+    expect(matches).toHaveLength(2);
+    expect(matches[1].round).toBe(1);
+    expect(matches[1].matchIndex).toBe(1);
+    expect(matches[1].playerIds).toEqual(['c', 'd']);
+  });
+
+  it('adds match to a specific round', () => {
+    const round1 = addMatchToRound([], ['a', 'b']);
+    const matches = addMatchToRound(round1, ['c', 'd'], 2);
+    expect(matches).toHaveLength(2);
+    expect(matches[1].round).toBe(2);
+    expect(matches[1].matchIndex).toBe(0);
+  });
+
+  it('preserves existing matches', () => {
+    let matches = addMatchToRound([], ['a', 'b']);
+    matches = addMatchToRound(matches, ['c', 'd']);
+    expect(matches[0].playerIds).toEqual(['a', 'b']);
+    expect(matches[1].playerIds).toEqual(['c', 'd']);
+  });
+
+  it('throws when fewer than 2 players', () => {
+    expect(() => addMatchToRound([], ['a'])).toThrow('Each match must have at least 2 players');
+  });
+
+  it('throws when player ID is empty', () => {
+    expect(() => addMatchToRound([], ['a', ''])).toThrow('Player ID cannot be empty');
+  });
+
+  it('throws when duplicate player in same match', () => {
+    expect(() => addMatchToRound([], ['a', 'a'])).toThrow('Duplicate player a in match');
+  });
+
+  it('throws when player is already in a match in the same round', () => {
+    const matches = addMatchToRound([], ['a', 'b']);
+    expect(() => addMatchToRound(matches, ['a', 'c'])).toThrow('Player a is already in a match in round 1');
+  });
+
+  it('allows same player in different rounds', () => {
+    const matches = addMatchToRound([], ['a', 'b']);
+    const updated = addMatchToRound(matches, ['a', 'c'], 2);
+    expect(updated).toHaveLength(2);
+    expect(updated[1].round).toBe(2);
+    expect(updated[1].playerIds).toContain('a');
+  });
+
+  it('supports multi-player matches', () => {
+    const matches = addMatchToRound([], ['a', 'b', 'c']);
+    expect(matches[0].playerIds).toEqual(['a', 'b', 'c']);
+  });
+
+  it('does not modify original array', () => {
+    const original = addMatchToRound([], ['a', 'b']);
+    addMatchToRound(original, ['c', 'd']);
+    expect(original).toHaveLength(1);
   });
 });
 
