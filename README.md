@@ -1,5 +1,7 @@
 # Dart Tournament
 
+**[Live App](https://p-h-0-x.github.io/dart-tournament/)**
+
 A dart tournament management app built with React + TypeScript, Firebase, and deployed on GitHub Pages.
 
 ## Features
