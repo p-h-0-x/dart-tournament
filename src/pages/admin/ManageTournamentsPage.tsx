@@ -201,8 +201,9 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
     );
   };
 
-  // The round we're currently planning matches for
-  const planningRound = totalRounds === 0 ? 1 : (currentRoundComplete ? totalRounds + 1 : totalRounds);
+  // The round we're currently planning matches for (stay on the current round until user explicitly advances)
+  const [manualNextRound, setManualNextRound] = useState(false);
+  const planningRound = totalRounds === 0 ? 1 : (manualNextRound ? totalRounds + 1 : totalRounds);
   const planningRoundMatches = (t.matches ?? []).filter((m: TournamentMatch) => m.round === planningRound);
   const playersInPlanningRound = new Set(planningRoundMatches.flatMap((m: TournamentMatch) => m.playerIds));
   const availableForMatch = activePlayerIds.filter((id) => !playersInPlanningRound.has(id));
@@ -214,6 +215,7 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
       const updatedMatches = addMatchToRound(t.matches ?? [], matchSelection, planningRound);
       await updateTournament(t.id, { matches: updatedMatches });
       setMatchSelection([]);
+      setManualNextRound(false);
     } finally {
       setSaving(false);
     }
@@ -450,7 +452,17 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
               )}
 
               <div className="flex gap-2">
-                <button className="btn btn-outline btn-sm" onClick={() => { setShowMatchUI(false); setMatchSelection([]); }}>
+                {currentRoundComplete && totalRounds > 0 && !manualNextRound && (
+                  <button className="btn btn-primary btn-sm" onClick={() => { setManualNextRound(true); setMatchSelection([]); }}>
+                    Start Round {totalRounds + 1}
+                  </button>
+                )}
+                {manualNextRound && (
+                  <button className="btn btn-outline btn-sm" onClick={() => { setManualNextRound(false); setMatchSelection([]); }}>
+                    Back to Round {totalRounds}
+                  </button>
+                )}
+                <button className="btn btn-outline btn-sm" onClick={() => { setShowMatchUI(false); setMatchSelection([]); setManualNextRound(false); }}>
                   Close
                 </button>
               </div>
