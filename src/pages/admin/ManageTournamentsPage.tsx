@@ -422,7 +422,7 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
                           key={pid}
                           className={`btn btn-sm ${matchSelection.includes(pid) ? 'btn-primary' : 'btn-outline'}`}
                           onClick={() => toggleMatchPlayer(pid)}
-                          style={{ textDecoration: isElim ? 'line-through' : 'none' }}
+                          style={{ textDecoration: isElim ? 'line-through' : 'none', opacity: isElim ? 0.5 : 1 }}
                         >
                           {getPlayer(pid)?.name ?? '?'}
                         </button>
