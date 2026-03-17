@@ -90,7 +90,7 @@ export default function TournamentDetailPage() {
         <h2 className="card-title mb-4">Active Players</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
           {activePlayerIds.map((pid) => {
-            const isEliminated = eliminatedIds.has(pid);
+            const isEliminated = tournament.status !== 'completed' && eliminatedIds.has(pid);
             return (
               <span key={pid} style={{
                 padding: '0.25rem 0.75rem',
