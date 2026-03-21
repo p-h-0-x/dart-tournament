@@ -122,3 +122,28 @@ export async function deleteTournament(id: string): Promise<void> {
   batch.delete(doc(db, 'tournaments', id));
   await batch.commit();
 }
+
+export async function resetAllData(): Promise<{ players: number; games: number; tournaments: number }> {
+  await requireAdmin();
+
+  const [playersSnap, gamesSnap, tournamentsSnap] = await Promise.all([
+    getDocs(playersCol()),
+    getDocs(gamesCol()),
+    getDocs(tournamentsCol()),
+  ]);
+
+  const allDocs = [...playersSnap.docs, ...gamesSnap.docs, ...tournamentsSnap.docs];
+
+  // Firestore batches are limited to 500 operations
+  for (let i = 0; i < allDocs.length; i += 500) {
+    const batch = writeBatch(db);
+    allDocs.slice(i, i + 500).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
+
+  return {
+    players: playersSnap.size,
+    games: gamesSnap.size,
+    tournaments: tournamentsSnap.size,
+  };
+}

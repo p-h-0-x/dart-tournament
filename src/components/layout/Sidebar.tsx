@@ -42,6 +42,9 @@ export default function Sidebar() {
             <NavLink to="/admin/players" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
               <span>👤</span> Manage Players
             </NavLink>
+            <NavLink to="/admin/settings" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+              <span>🔧</span> Settings
+            </NavLink>
           </div>
         )}
 
