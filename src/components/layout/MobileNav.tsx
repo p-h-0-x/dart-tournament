@@ -24,6 +24,9 @@ export default function MobileNav() {
                 <NavLink to="/admin/players" className="mobile-admin-link" onClick={() => setShowAdminMenu(false)}>
                   <span>👤</span> Manage Players
                 </NavLink>
+                <NavLink to="/admin/settings" className="mobile-admin-link" onClick={() => setShowAdminMenu(false)}>
+                  <span>🔧</span> Settings
+                </NavLink>
                 <button onClick={() => { logout(); setShowAdminMenu(false); }} className="mobile-admin-link" style={{ border: 'none', background: 'none', width: '100%', textAlign: 'left', cursor: 'pointer' }}>
                   <span>🚪</span> Logout
                 </button>
