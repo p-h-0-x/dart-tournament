@@ -583,6 +583,40 @@ tr:hover td {
   display: none;
 }
 
+/* Mobile nav */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  padding: 0.5rem;
+  z-index: 100;
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.mobile-nav-item.active {
+  color: var(--accent);
+}
+.mobile-nav-icon {
+  font-size: 1.25rem;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .sidebar {
@@ -591,6 +625,7 @@ tr:hover td {
   .main-content {
     margin-left: 0;
     padding: 1rem;
+    padding-bottom: 5rem;
   }
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -644,49 +679,10 @@ tr:hover td {
     background: var(--bg-hover);
     color: var(--text-primary);
   }
-}
-
-/* Mobile nav */
-.mobile-nav {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--border);
-  padding: 0.5rem;
-  z-index: 100;
-}
-
-@media (max-width: 768px) {
   .mobile-nav {
     display: flex;
     justify-content: space-around;
   }
-  .main-content {
-    padding-bottom: 4rem;
-  }
-}
-
-.mobile-nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.2rem;
-  padding: 0.4rem 0.75rem;
-  border-radius: var(--radius);
-  color: var(--text-muted);
-  font-size: 0.65rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-.mobile-nav-item.active {
-  color: var(--accent);
-}
-.mobile-nav-icon {
-  font-size: 1.25rem;
 }
 
 /* Player history */
