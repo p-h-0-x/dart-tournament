@@ -1042,6 +1042,11 @@ tr:hover td {
   border-color: var(--accent);
   box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
 }
+.clock-board__player-card--extra-turn {
+  border-color: var(--warning);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.08);
+}
 .clock-board__player-card--finished {
   opacity: 0.5;
 }

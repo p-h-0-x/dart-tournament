@@ -118,6 +118,17 @@ export default function GamePlayPage() {
     }
   };
 
+  // --- Clock mode: undo handler (no game-completion check) ---
+  const handleClockUndoState = async (newState: ClockLiveState) => {
+    if (!id) return;
+    setSaving(true);
+    try {
+      await updateGameLiveState(id, newState);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // --- Clock mode handler ---
   const handleClockStateUpdate = async (newState: ClockLiveState) => {
     if (!id) return;
@@ -254,6 +265,7 @@ export default function GamePlayPage() {
             players={gamePlayers}
             isAdmin={!isCompleted}
             onUpdateState={handleClockStateUpdate}
+            onUndoState={handleClockUndoState}
           />
 
           {/* Tie resolution for clock in tournament context */}
