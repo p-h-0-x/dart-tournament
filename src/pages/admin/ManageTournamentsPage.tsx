@@ -250,6 +250,9 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer, navigate }: { to
   const planningRoundMatches = (t.matches ?? []).filter((m: TournamentMatch) => m.round === planningRound);
   const playersInPlanningRound = new Set(planningRoundMatches.flatMap((m: TournamentMatch) => m.playerIds));
   const availableForMatch = activePlayerIds.filter((id) => !playersInPlanningRound.has(id));
+  // Eliminated players not in this round (can be added back for losers bracket / re-match)
+  const eliminatedForMatch = [...eliminatedIds].filter((id) => activePlayerIds.includes(id) && !playersInPlanningRound.has(id) && !availableForMatch.includes(id));
+  const allSelectableForMatch = [...availableForMatch, ...eliminatedForMatch];
 
   const addSingleMatch = async () => {
     if (matchSelection.length < 2) return;
@@ -518,20 +521,20 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer, navigate }: { to
               )}
 
               {/* Select players for a match */}
-              {availableForMatch.length >= 2 && (
+              {allSelectableForMatch.length >= 1 && (
                 <div style={{ marginBottom: '0.75rem' }}>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
                     Tap players to add them to a match ({matchSelection.length} selected):
                   </p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    {availableForMatch.map((pid) => {
+                    {allSelectableForMatch.map((pid) => {
                       const isElim = eliminatedIds.has(pid);
                       return (
                         <button
                           key={pid}
                           className={`btn btn-sm ${matchSelection.includes(pid) ? 'btn-primary' : 'btn-outline'}`}
                           onClick={() => toggleMatchPlayer(pid)}
-                          style={{ textDecoration: isElim ? 'line-through' : 'none', opacity: isElim ? 0.5 : 1 }}
+                          style={{ textDecoration: isElim ? 'line-through' : 'none', opacity: isElim ? 0.6 : 1 }}
                         >
                           {getPlayer(pid)?.name ?? '?'}
                         </button>
@@ -546,13 +549,7 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer, navigate }: { to
                 </div>
               )}
 
-              {availableForMatch.length === 1 && (
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                  1 player without a match: {getPlayer(availableForMatch[0])?.name ?? '?'} (sits out this round)
-                </p>
-              )}
-
-              {availableForMatch.length === 0 && planningRoundMatches.length > 0 && (
+              {allSelectableForMatch.length === 0 && planningRoundMatches.length > 0 && (
                 <p style={{ fontSize: '0.8rem', color: 'var(--success)', marginBottom: '0.75rem' }}>
                   All players assigned!
                 </p>
