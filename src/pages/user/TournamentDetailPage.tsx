@@ -182,7 +182,9 @@ export default function TournamentDetailPage() {
                         {game.status === 'completed' ? (
                           <span className="badge badge-success">Done</span>
                         ) : (
-                          <span className="badge badge-warning">In Progress</span>
+                          <Link to={`/games/${game.id}`} className="badge badge-warning" style={{ textDecoration: 'none' }}>
+                            Watch Live
+                          </Link>
                         )}
                       </td>
                     </tr>

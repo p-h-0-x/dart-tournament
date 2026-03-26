@@ -743,3 +743,454 @@ tr:hover td {
 .text-center { text-align: center; }
 .font-bold { font-weight: 700; }
 .w-full { width: 100%; }
+
+/* =============================================
+   Game Components
+   ============================================= */
+
+/* Dart Input */
+.dart-input {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+}
+.dart-input--disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.dart-input__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+.dart-input__slots {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.dart-input__slot {
+  flex: 1;
+  min-width: 60px;
+  padding: 0.5rem;
+  text-align: center;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+.dart-input__slot--filled {
+  color: var(--success);
+  border-color: var(--success);
+}
+.dart-input__total {
+  min-width: 48px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--gold);
+}
+.dart-input__modifiers {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  justify-content: center;
+}
+.dart-input__mod-btn {
+  padding: 0.4rem 1.25rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.dart-input__mod-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.dart-input__mod-btn--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.dart-input__mod-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.dart-input__grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+.dart-input__num-btn {
+  padding: 0.6rem 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.dart-input__num-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+}
+.dart-input__num-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.dart-input__num-btn--bull {
+  grid-column: span 2;
+  background: rgba(239, 68, 68, 0.15);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.dart-input__num-btn--bull:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.3);
+}
+.dart-input__num-btn--miss {
+  grid-column: span 3;
+  color: var(--text-muted);
+}
+.dart-input__actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+/* Classic Game Board */
+.classic-board {
+  margin-bottom: 1.5rem;
+}
+.classic-board__round-display {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+.classic-board__round-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.classic-board__round-num {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.classic-board__table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+.classic-board__table th,
+.classic-board__table td {
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+.classic-board__table th {
+  background: var(--bg-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+.classic-board__table td:first-child {
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.classic-board__row--current {
+  background: rgba(59, 130, 246, 0.1);
+}
+.classic-board__row--current td:first-child {
+  color: var(--accent);
+}
+.classic-board__cell--success {
+  color: var(--success);
+  font-weight: 600;
+}
+.classic-board__cell--fail {
+  color: var(--danger);
+  font-size: 0.75rem;
+}
+.classic-board__cell--capital {
+  font-weight: 700;
+}
+.classic-board__inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.classic-board__actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+/* Killer Game Board */
+.killer-board__phase-title {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--accent);
+}
+.killer-board__players {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.killer-board__player-card {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0.75rem;
+  text-align: center;
+  transition: all 0.2s;
+}
+.killer-board__player-card--current {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
+}
+.killer-board__player-card--killer {
+  border-color: var(--danger);
+  background: rgba(239, 68, 68, 0.08);
+}
+.killer-board__player-card--eliminated {
+  opacity: 0.4;
+  border-color: var(--border);
+}
+.killer-board__player-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+.killer-board__player-card--eliminated .killer-board__player-name {
+  text-decoration: line-through;
+}
+.killer-board__player-number {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+.killer-board__lives-bar {
+  width: 100%;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 0.25rem;
+}
+.killer-board__lives-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.3s, background 0.3s;
+  background: var(--success);
+}
+.killer-board__lives-fill--killer {
+  background: var(--danger);
+}
+.killer-board__lives-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.killer-board__badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-top: 0.25rem;
+}
+.killer-board__badge--killer {
+  background: var(--danger);
+  color: white;
+}
+.killer-board__badge--eliminated {
+  background: var(--text-muted);
+  color: var(--bg-primary);
+}
+
+/* Clock Game Board */
+.clock-board__players {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.clock-board__player-card {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0.75rem;
+  text-align: center;
+  transition: all 0.2s;
+}
+.clock-board__player-card--current {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
+}
+.clock-board__player-card--finished {
+  opacity: 0.5;
+}
+.clock-board__player-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+.clock-board__player-target {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+.clock-board__progress-bar {
+  width: 100%;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 0.25rem;
+}
+.clock-board__progress-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.3s;
+  background: linear-gradient(90deg, var(--accent), var(--success));
+}
+.clock-board__progress-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.clock-board__badge--finished {
+  display: inline-block;
+  background: var(--success);
+  color: white;
+  padding: 0.1rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
+}
+.clock-board__extra-turn {
+  display: inline-block;
+  background: var(--warning);
+  color: var(--bg-primary);
+  padding: 0.2rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+.clock-board__current-info {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+.clock-board__current-player {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.clock-board__current-target {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* Game Results Banner */
+.game-results-banner {
+  text-align: center;
+  padding: 2rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.game-results-banner__trophy {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+.game-results-banner__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 0.25rem;
+}
+.game-results-banner__subtitle {
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+.game-results-banner__pick-buttons {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+.game-results-banner__table {
+  max-width: 400px;
+  margin: 1rem auto 0;
+}
+.game-results-banner__table table {
+  width: 100%;
+}
+.game-results-banner__table th {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.game-results-banner__table td {
+  padding: 0.4rem 0.75rem;
+}
+.game-results-banner__winner-row {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+/* Game Play Page */
+.game-play-page__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.game-play-page__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.game-play-page__mode-tag {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--accent);
+  color: white;
+}
+.game-play-page__status {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Game View (read-only) header */
+.game-view__live-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: var(--danger);
+  color: white;
+  animation: pulse-live 2s ease-in-out infinite;
+}
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}

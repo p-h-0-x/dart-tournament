@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { GAME_MODE_LABELS, type GameMode } from '../../models/types';
 import { getRoundName, getTotalRounds } from '../../engines/tournament';
@@ -138,7 +139,9 @@ export default function GamesPage() {
                       {entry.status === 'completed' ? (
                         <span className="badge badge-success">Done</span>
                       ) : entry.status === 'in_progress' ? (
-                        <span className="badge badge-warning">Live</span>
+                        <Link to={`/games/${entry.id}`} className="badge badge-warning" style={{ textDecoration: 'none' }}>
+                          Watch Live
+                        </Link>
                       ) : (
                         <span className="badge badge-info">Pending</span>
                       )}
