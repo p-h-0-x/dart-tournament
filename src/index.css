@@ -26,11 +26,6 @@
   box-sizing: border-box;
 }
 
-html, body {
-  overflow-x: hidden;
-  width: 100%;
-}
-
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background-color: var(--bg-primary);
@@ -633,6 +628,8 @@ tr:hover td {
     margin-left: 0;
     padding: 1rem;
     padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+    max-width: 100vw;
+    overflow-x: hidden;
   }
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
