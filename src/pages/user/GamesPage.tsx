@@ -32,12 +32,11 @@ export default function GamesPage() {
     }
   }
 
-  // Build unified list: standalone games + tournament matches
+  // Build unified list: all games + tournament matches without a linked game
   const entries: GameEntry[] = [];
 
-  // Add standalone games (not linked to a tournament match)
+  // Add all games (standalone and tournament-linked)
   for (const g of games) {
-    if (tournamentGameIds.has(g.id)) continue;
     const winner = g.results.find((r) => r.rank === 1);
     entries.push({
       id: g.id,
