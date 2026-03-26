@@ -59,6 +59,8 @@ export default function DartInput({
   const numbers = allowedNumbers ?? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
   const showBull = !allowedNumbers || allowedNumbers.includes(25);
   const showMiss = true;
+  const totalButtons = numbers.length + (showBull ? 1 : 0) + (showMiss ? 1 : 0);
+  const isCompact = totalButtons <= 4;
 
   const formatDart = (d: StoredDart): string => {
     if (d.number === 0) return 'Miss';
@@ -98,7 +100,10 @@ export default function DartInput({
       )}
 
       {/* Number grid */}
-      <div className="dart-input__grid">
+      <div
+        className="dart-input__grid"
+        style={isCompact ? { gridTemplateColumns: `repeat(${totalButtons}, 1fr)` } : undefined}
+      >
         {numbers.map((num) => (
           <button
             key={num}
@@ -111,7 +116,7 @@ export default function DartInput({
         ))}
         {showBull && (
           <button
-            className="dart-input__num-btn dart-input__num-btn--bull"
+            className={`dart-input__num-btn${isCompact ? '' : ' dart-input__num-btn--bull'}`}
             onClick={() => addDart(25)}
             disabled={disabled || darts.length >= maxDarts}
           >
@@ -120,7 +125,7 @@ export default function DartInput({
         )}
         {showMiss && (
           <button
-            className="dart-input__num-btn dart-input__num-btn--miss"
+            className={`dart-input__num-btn${isCompact ? '' : ' dart-input__num-btn--miss'}`}
             onClick={() => addDart(0)}
             disabled={disabled || darts.length >= maxDarts}
           >

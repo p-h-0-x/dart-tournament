@@ -31,6 +31,14 @@ export default function ClassicGameBoard({
 
   const allPlayersHaveDarts = playerIds.every((pid) => (pendingDarts[pid]?.length ?? 0) > 0);
 
+  // Simplify dart input for simple contracts
+  const SIMPLE_NUMBER_CONTRACTS = new Set(['20', '19', '18', '17', '16', '15', '14']);
+  const contractId = currentContract?.id;
+  const isSimpleNumber = contractId != null && SIMPLE_NUMBER_CONTRACTS.has(contractId);
+  const isBull = contractId === 'bull';
+  const allowedNumbers = isSimpleNumber ? [parseInt(contractId!)] : isBull ? [25] : undefined;
+  const showModifiers = !isBull; // bull only has single/double, handled automatically
+
   const handleConfirmDarts = (playerId: string, darts: StoredDart[]) => {
     setPendingDarts((prev) => ({ ...prev, [playerId]: darts }));
   };
@@ -134,10 +142,12 @@ export default function ClassicGameBoard({
           <div className="classic-board__inputs">
             {playerIds.map((pid) => (
               <DartInput
-                key={pid}
+                key={`${pid}-${contractId}`}
                 label={getName(pid)}
                 onDartsConfirmed={(darts) => handleConfirmDarts(pid, darts)}
                 disabled={pendingDarts[pid]?.length > 0}
+                allowedNumbers={allowedNumbers}
+                showModifiers={showModifiers}
               />
             ))}
           </div>
