@@ -31,6 +31,10 @@ export default function ClassicGameBoard({
 
   const allPlayersHaveDarts = playerIds.every((pid) => (pendingDarts[pid]?.length ?? 0) > 0);
 
+  const clearPlayerDarts = (playerId: string) => {
+    setPendingDarts((prev) => ({ ...prev, [playerId]: [] }));
+  };
+
   // Simplify dart input for simple contracts
   const SIMPLE_NUMBER_CONTRACTS = new Set(['20', '19', '18', '17', '16', '15', '14']);
   const contractId = currentContract?.id;
@@ -140,33 +144,32 @@ export default function ClassicGameBoard({
       {isAdmin && !isComplete && (
         <>
           <div className="classic-board__inputs">
-            {playerIds.map((pid) => (
-              <DartInput
-                key={`${pid}-${contractId}`}
-                label={getName(pid)}
-                onDartsConfirmed={(darts) => handleConfirmDarts(pid, darts)}
-                disabled={pendingDarts[pid]?.length > 0}
-                allowedNumbers={allowedNumbers}
-                showModifiers={showModifiers}
-              />
-            ))}
-          </div>
+            {playerIds.map((pid) => {
+              const confirmed = pendingDarts[pid];
+              const hasConfirmed = confirmed && confirmed.length > 0;
 
-          {/* Show confirmed darts summary */}
-          {playerIds.some((pid) => pendingDarts[pid]?.length > 0) && (
-            <div style={{ marginBottom: '0.75rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              {playerIds.map((pid) => {
-                const darts = pendingDarts[pid];
-                if (!darts || darts.length === 0) return null;
-                const total = darts.reduce((s, d) => s + d.score, 0);
+              if (hasConfirmed) {
                 return (
-                  <span key={pid} style={{ marginRight: '1rem' }}>
-                    {getName(pid)}: {total} pts
-                  </span>
+                  <ConfirmedDarts
+                    key={`${pid}-confirmed`}
+                    label={getName(pid)}
+                    darts={confirmed}
+                    onReenter={() => clearPlayerDarts(pid)}
+                  />
                 );
-              })}
-            </div>
-          )}
+              }
+
+              return (
+                <DartInput
+                  key={`${pid}-${contractId}`}
+                  label={getName(pid)}
+                  onDartsConfirmed={(darts) => handleConfirmDarts(pid, darts)}
+                  allowedNumbers={allowedNumbers}
+                  showModifiers={showModifiers}
+                />
+              );
+            })}
+          </div>
 
           <div className="classic-board__actions">
             <button
@@ -186,6 +189,40 @@ export default function ClassicGameBoard({
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function formatDart(d: StoredDart): string {
+  if (d.number === 0) return 'Miss';
+  const prefix = d.modifier === 'double' ? 'D' : d.modifier === 'triple' ? 'T' : '';
+  if (d.number === 25) return prefix ? `${prefix}Bull` : 'Bull';
+  return `${prefix}${d.number}`;
+}
+
+function ConfirmedDarts({ label, darts, onReenter }: { label: string; darts: StoredDart[]; onReenter: () => void }) {
+  const total = darts.reduce((s, d) => s + d.score, 0);
+
+  return (
+    <div className="dart-input">
+      {label && <div className="dart-input__label">{label}</div>}
+      <div className="dart-input__slots">
+        {darts.map((d, i) => (
+          <div key={i} className="dart-input__slot dart-input__slot--filled">
+            {formatDart(d)}
+          </div>
+        ))}
+        {/* Pad remaining empty slots if fewer than 3 darts */}
+        {Array.from({ length: Math.max(0, 3 - darts.length) }, (_, i) => (
+          <div key={`empty-${i}`} className="dart-input__slot">-</div>
+        ))}
+        <div className="dart-input__total">{total}</div>
+      </div>
+      <div className="dart-input__actions">
+        <button className="btn btn-outline btn-sm" onClick={onReenter}>
+          Re-enter
+        </button>
+      </div>
     </div>
   );
 }
