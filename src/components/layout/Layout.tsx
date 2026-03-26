@@ -4,12 +4,14 @@ import MobileNav from './MobileNav';
 
 export default function Layout() {
   return (
-    <div className="app-layout">
-      <Sidebar />
-      <main className="main-content">
-        <Outlet />
-      </main>
+    <>
+      <div className="app-layout">
+        <Sidebar />
+        <main className="main-content">
+          <Outlet />
+        </main>
+      </div>
       <MobileNav />
-    </div>
+    </>
   );
 }

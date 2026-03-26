@@ -593,7 +593,8 @@ tr:hover td {
   background: var(--bg-secondary);
   border-top: 1px solid var(--border);
   padding: 0.5rem;
-  z-index: 100;
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  z-index: 200;
 }
 
 .mobile-nav-item {
@@ -625,7 +626,7 @@ tr:hover td {
   .main-content {
     margin-left: 0;
     padding: 1rem;
-    padding-bottom: 5rem;
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
   }
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -658,13 +659,13 @@ tr:hover td {
   }
   .mobile-admin-menu {
     position: fixed;
-    bottom: 3.5rem;
+    bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
     left: 0;
     right: 0;
     background: var(--bg-secondary);
     border-top: 1px solid var(--border);
     padding: 0.5rem;
-    z-index: 151;
+    z-index: 201;
   }
   .mobile-admin-link {
     display: flex;
