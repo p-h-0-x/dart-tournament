@@ -72,8 +72,8 @@ export default function GamesPage() {
     }
   }
 
-  // Sort by date descending
-  entries.sort((a, b) => b.date - a.date);
+  // Sort by date ascending (oldest first = chronological order)
+  entries.sort((a, b) => a.date - b.date);
 
   const filtered = modeFilter === 'all'
     ? entries
