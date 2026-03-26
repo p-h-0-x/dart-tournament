@@ -38,6 +38,18 @@ export default function GamesPage() {
   // Add all games (standalone and tournament-linked)
   for (const g of games) {
     const winner = g.results.find((r) => r.rank === 1);
+    let tournamentLabel: string | undefined;
+    if (g.tournamentId) {
+      const t = tournaments.find((t) => t.id === g.tournamentId);
+      if (t) {
+        const totalRounds = getTotalRounds(t.matches ?? []);
+        const roundNum = g.tournamentRound ?? 1;
+        const roundLabel = t.status === 'completed'
+          ? getRoundName(roundNum, totalRounds)
+          : `Round ${roundNum}`;
+        tournamentLabel = `${t.name} - ${roundLabel}`;
+      }
+    }
     entries.push({
       id: g.id,
       date: g.completedAt ?? g.createdAt,
@@ -45,9 +57,7 @@ export default function GamesPage() {
       playerIds: g.playerIds,
       winnerPlayerId: winner?.playerId,
       status: g.status,
-      tournamentName: g.tournamentId
-        ? tournaments.find((t) => t.id === g.tournamentId)?.name
-        : undefined,
+      tournamentName: tournamentLabel,
       hasGameDoc: true,
     });
   }
@@ -59,6 +69,9 @@ export default function GamesPage() {
     for (const m of t.matches) {
       if (m.gameId) continue; // already added from games list
       if (m.playerIds.length < 2) continue; // skip byes
+      const roundLabel = t.status === 'completed'
+        ? getRoundName(m.round, totalRounds)
+        : `Round ${m.round}`;
       entries.push({
         id: `${t.id}-${m.round}-${m.matchIndex}`,
         date: t.completedAt ?? t.createdAt,
@@ -66,7 +79,7 @@ export default function GamesPage() {
         playerIds: m.playerIds,
         winnerPlayerId: m.winnerId,
         status: m.status,
-        tournamentName: `${t.name} - ${getRoundName(m.round, totalRounds)}`,
+        tournamentName: `${t.name} - ${roundLabel}`,
         hasGameDoc: false,
       });
     }
