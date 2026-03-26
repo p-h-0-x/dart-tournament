@@ -168,6 +168,7 @@ export default function TournamentDetailPage() {
                   <th>Players</th>
                   <th>Winner</th>
                   <th>Status</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -184,6 +185,13 @@ export default function TournamentDetailPage() {
                         ) : (
                           <Link to={`/games/${game.id}`} className="badge badge-warning" style={{ textDecoration: 'none' }}>
                             Watch Live
+                          </Link>
+                        )}
+                      </td>
+                      <td>
+                        {game.liveState && (
+                          <Link to={`/games/${game.id}`} className="btn btn-outline btn-sm">
+                            View
                           </Link>
                         )}
                       </td>

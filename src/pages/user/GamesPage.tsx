@@ -12,6 +12,8 @@ interface GameEntry {
   winnerPlayerId?: string;
   status: 'pending' | 'in_progress' | 'completed';
   tournamentName?: string;
+  /** True if this entry has a Firestore game document (with liveState/turn history). */
+  hasGameDoc: boolean;
 }
 
 export default function GamesPage() {
@@ -47,6 +49,7 @@ export default function GamesPage() {
       tournamentName: g.tournamentId
         ? tournaments.find((t) => t.id === g.tournamentId)?.name
         : undefined,
+      hasGameDoc: true,
     });
   }
 
@@ -65,6 +68,7 @@ export default function GamesPage() {
         winnerPlayerId: m.winnerId,
         status: m.status,
         tournamentName: `${t.name} - ${getRoundName(m.round, totalRounds)}`,
+        hasGameDoc: false,
       });
     }
   }
@@ -117,6 +121,7 @@ export default function GamesPage() {
                   <th>Players</th>
                   <th>Winner</th>
                   <th>Status</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -144,6 +149,13 @@ export default function GamesPage() {
                         </Link>
                       ) : (
                         <span className="badge badge-info">Pending</span>
+                      )}
+                    </td>
+                    <td>
+                      {entry.hasGameDoc && (
+                        <Link to={`/games/${entry.id}`} className="btn btn-outline btn-sm">
+                          View
+                        </Link>
                       )}
                     </td>
                   </tr>
