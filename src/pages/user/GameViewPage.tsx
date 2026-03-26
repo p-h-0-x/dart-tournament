@@ -8,6 +8,7 @@ import ClassicGameBoard from '../../components/game/ClassicGameBoard';
 import KillerGameBoard from '../../components/game/KillerGameBoard';
 import ClockGameBoard from '../../components/game/ClockGameBoard';
 import GameResultsBanner from '../../components/game/GameResultsBanner';
+import GameTurnHistory from '../../components/game/GameTurnHistory';
 
 export default function GameViewPage() {
   const { id } = useParams<{ id: string }>();
@@ -83,6 +84,11 @@ export default function GameViewPage() {
           players={gamePlayers}
           isAdmin={false}
         />
+      )}
+
+      {/* Turn history */}
+      {game.liveState && (
+        <GameTurnHistory liveState={game.liveState} players={gamePlayers} playerIds={game.playerIds} />
       )}
 
       {/* No liveState and not completed */}
