@@ -63,7 +63,9 @@ export default function HighScoresPage() {
           <div className="stat-card">
             <div className="stat-value" style={{ color: 'var(--gold)' }}>{allTimeRecord.score}</div>
             <div className="stat-label">All-Time Record</div>
-            <div className="text-sm text-muted">{allTimeRecord.playerName}</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--gold)', marginTop: '0.25rem' }}>
+              ✨ {allTimeRecord.playerName} ✨
+            </div>
           </div>
           <div className="stat-card">
             <div className="stat-value">{classicEntries.length}</div>
