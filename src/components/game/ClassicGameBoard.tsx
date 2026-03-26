@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { CONTRACTS, type ClassicLiveState, type StoredDart, type Player } from '../../models/types';
+import { CONTRACTS, type ClassicLiveState, type StoredDart, type Player, storedDartToEngineDart } from '../../models/types';
+import { checkContract } from '../../engines/contracts';
 import DartInput from './DartInput';
 
 interface ClassicGameBoardProps {
@@ -154,6 +155,9 @@ export default function ClassicGameBoard({
                     key={`${pid}-confirmed`}
                     label={getName(pid)}
                     darts={confirmed}
+                    currentCapital={liveState.capitals[pid] ?? 0}
+                    contractId={contractId!}
+                    isFirstRound={liveState.currentRound === 0}
                     onReenter={() => clearPlayerDarts(pid)}
                   />
                 );
@@ -200,8 +204,29 @@ function formatDart(d: StoredDart): string {
   return `${prefix}${d.number}`;
 }
 
-function ConfirmedDarts({ label, darts, onReenter }: { label: string; darts: StoredDart[]; onReenter: () => void }) {
-  const total = darts.reduce((s, d) => s + d.score, 0);
+function ConfirmedDarts({ label, darts, currentCapital, contractId, isFirstRound, onReenter }: {
+  label: string;
+  darts: StoredDart[];
+  currentCapital: number;
+  contractId: string;
+  isFirstRound: boolean;
+  onReenter: () => void;
+}) {
+  const engineDarts = darts.map(storedDartToEngineDart);
+  const result = checkContract(contractId, engineDarts);
+
+  let projectedCapital: number;
+  let isHit: boolean;
+  if (isFirstRound) {
+    projectedCapital = result.score;
+    isHit = true;
+  } else if (result.hit) {
+    projectedCapital = currentCapital + result.score;
+    isHit = true;
+  } else {
+    projectedCapital = Math.ceil(currentCapital / 2);
+    isHit = false;
+  }
 
   return (
     <div className="dart-input">
@@ -212,11 +237,12 @@ function ConfirmedDarts({ label, darts, onReenter }: { label: string; darts: Sto
             {formatDart(d)}
           </div>
         ))}
-        {/* Pad remaining empty slots if fewer than 3 darts */}
         {Array.from({ length: Math.max(0, 3 - darts.length) }, (_, i) => (
           <div key={`empty-${i}`} className="dart-input__slot">-</div>
         ))}
-        <div className="dart-input__total">{total}</div>
+        <div className="dart-input__total" style={{ color: isHit ? 'var(--success)' : 'var(--danger)' }}>
+          {isHit ? projectedCapital : `${projectedCapital} (½)`}
+        </div>
       </div>
       <div className="dart-input__actions">
         <button className="btn btn-outline btn-sm" onClick={onReenter}>
