@@ -18,6 +18,7 @@ vi.mock('../../services/database', () => ({
   addTournament: (...args: unknown[]) => mockAddTournament(...args),
   updateTournament: (...args: unknown[]) => mockUpdateTournament(...args),
   deleteTournament: (...args: unknown[]) => mockDeleteTournament(...args),
+  addGame: vi.fn(() => Promise.resolve('mock-game-id')),
   onPlayersChange: vi.fn(() => () => {}),
   onGamesChange: vi.fn(() => () => {}),
   onTournamentsChange: vi.fn(() => () => {}),
@@ -256,11 +257,11 @@ describe('ManageTournamentsPage — flexible round planning', () => {
 
     renderPage();
 
-    // Should show "Round 1 - Select Winners" section
-    expect(screen.getByText('Round 1 - Select Winners')).toBeInTheDocument();
+    // Should show "Round 1 - Matches" section
+    expect(screen.getByText('Round 1 - Matches')).toBeInTheDocument();
 
     // Should show buttons for each player in the pending match
-    const winnerSection = screen.getByText('Round 1 - Select Winners').closest('div')!;
+    const winnerSection = screen.getByText('Round 1 - Matches').closest('div')!;
     const aliceBtn = within(winnerSection).getByRole('button', { name: 'Alice' });
     const bobBtn = within(winnerSection).getByRole('button', { name: 'Bob' });
     expect(aliceBtn).toBeInTheDocument();
@@ -284,7 +285,7 @@ describe('ManageTournamentsPage — flexible round planning', () => {
     const user = userEvent.setup();
     renderPage();
 
-    const winnerSection = screen.getByText('Round 1 - Select Winners').closest('div')!;
+    const winnerSection = screen.getByText('Round 1 - Matches').closest('div')!;
     await user.click(within(winnerSection).getByRole('button', { name: 'Alice' }));
 
     expect(mockUpdateTournament).toHaveBeenCalledWith('t1', {

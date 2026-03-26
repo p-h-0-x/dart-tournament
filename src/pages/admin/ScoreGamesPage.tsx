@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { addGame, updateGame } from '../../services/database';
 import { GAME_MODE_LABELS, type GameMode, type GameResult, type Game, type Player } from '../../models/types';
@@ -197,7 +198,14 @@ function ActiveGameCard({ game, getPlayer }: {
     <div style={{ padding: '1rem 0', borderBottom: '1px solid var(--border)' }}>
       <div className="flex justify-between items-center mb-2">
         <span className="mode-tag">{GAME_MODE_LABELS[game.mode]}</span>
-        <span className="badge badge-warning">In Progress</span>
+        <div className="flex gap-2 items-center">
+          <span className="badge badge-warning">In Progress</span>
+          {game.liveState && (
+            <Link to={`/admin/games/${game.id}`} className="btn btn-primary btn-sm">
+              Play
+            </Link>
+          )}
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>

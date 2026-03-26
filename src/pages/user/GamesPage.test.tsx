@@ -90,7 +90,7 @@ describe('GamesPage', () => {
     expect(screen.getAllByText('Killer').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Alice')).toBeInTheDocument();
     expect(screen.getByText('Done')).toBeInTheDocument();
-    expect(screen.getByText('Live')).toBeInTheDocument();
+    expect(screen.getByText('Watch Live')).toBeInTheDocument();
   });
 
   it('filters games by mode', async () => {

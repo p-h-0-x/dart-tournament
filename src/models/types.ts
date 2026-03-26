@@ -78,6 +78,7 @@ export interface Game {
   playerIds: string[];
   results: GameResult[];
   status: 'pending' | 'in_progress' | 'completed';
+  liveState?: LiveGameState;
   createdAt: number;
   completedAt?: number;
 }
@@ -106,6 +107,105 @@ export interface Tournament {
   completedAt?: number;
   championId?: string;
 }
+
+// --- StoredDart (Firestore-friendly dart format) ---
+// Uses { number, modifier, score } where number 25 = bull (both single and double).
+// The existing Dart type uses segment where 50 = double bull -- used by the contracts engine.
+export interface StoredDart {
+  number: number;        // 0=miss, 1-20, 25=bull
+  modifier: DartModifier;
+  score: number;         // precomputed point value
+}
+
+export function storedDartToEngineDart(sd: StoredDart): Dart {
+  if (sd.number === 25 && sd.modifier === 'double') {
+    return { segment: 50, modifier: 'double' };
+  }
+  if (sd.number === 25) {
+    return { segment: 25, modifier: 'single' };
+  }
+  return { segment: sd.number, modifier: sd.modifier };
+}
+
+export function createStoredDart(number: number, modifier: DartModifier = 'single'): StoredDart {
+  let score: number;
+  if (number === 0) {
+    score = 0;
+  } else if (number === 25) {
+    score = modifier === 'double' ? 50 : 25;
+  } else {
+    const mult = modifier === 'double' ? 2 : modifier === 'triple' ? 3 : 1;
+    score = number * mult;
+  }
+  return { number, modifier, score };
+}
+
+// --- Live Game State (stored in Firestore on in-progress games) ---
+
+// Classic Halve-It: 15 rounds, all players play the same contract each round
+export interface ClassicPlayerRound {
+  darts: StoredDart[];
+  score: number;
+  success: boolean;
+  capitalAfter: number;
+}
+
+export interface ClassicRound {
+  contractId: string;
+  players: Record<string, ClassicPlayerRound>; // playerId -> round result
+}
+
+export interface ClassicLiveState {
+  mode: 'classic';
+  currentRound: number;                          // 0-14 index into CONTRACTS
+  capitals: Record<string, number>;              // playerId -> current capital
+  rounds: ClassicRound[];                        // completed rounds
+  pendingDarts: Record<string, StoredDart[]>;    // per-player darts for current round (before submit)
+}
+
+// Killer: lives-based elimination game
+export interface KillerTurnSnapshot {
+  playerId: string;
+  darts: StoredDart[];
+  livesBefore: Record<string, number>;
+  killerBefore: Record<string, boolean>;
+  eliminatedBefore: Record<string, boolean>;
+}
+
+export interface KillerLiveState {
+  mode: 'killer';
+  phase: 'number' | 'play';
+  currentPlayerIndex: number;
+  playerOrder: string[];                          // playerId order for turns
+  numbers: Record<string, number>;                // playerId -> chosen number (1-20)
+  lives: Record<string, number>;                  // playerId -> current lives
+  isKiller: Record<string, boolean>;              // playerId -> has 9+ lives
+  eliminated: Record<string, boolean>;            // playerId -> eliminated
+  history: KillerTurnSnapshot[];                  // for undo
+}
+
+// Clock: race from 1 to Bull
+export interface ClockTurnHistory {
+  playerId: string;
+  prevPos: number;
+  newPos: number;
+  darts: StoredDart[];
+  extraTurn: boolean;
+  finishOrderBefore: string[];
+}
+
+export interface ClockLiveState {
+  mode: 'clock';
+  currentPlayerIndex: number;
+  playerOrder: string[];                          // playerId order for turns
+  positions: Record<string, number>;              // playerId -> position (1-12)
+  finished: Record<string, boolean>;
+  finishOrder: string[];                          // playerIds in finish order
+  turnCounts: Record<string, number>;             // playerId -> number of turns taken
+  history: ClockTurnHistory[];                    // for undo
+}
+
+export type LiveGameState = ClassicLiveState | KillerLiveState | ClockLiveState;
 
 // --- Leaderboard entry (computed) ---
 export interface LeaderboardEntry {

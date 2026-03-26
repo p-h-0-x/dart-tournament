@@ -17,6 +17,8 @@ import ManageTournamentsPage from './pages/admin/ManageTournamentsPage';
 import ManagePlayersPage from './pages/admin/ManagePlayersPage';
 import ScoreGamesPage from './pages/admin/ScoreGamesPage';
 import AdminSettingsPage from './pages/admin/AdminSettingsPage';
+import GamePlayPage from './pages/admin/GamePlayPage';
+import GameViewPage from './pages/user/GameViewPage';
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { isAdmin, loading } = useAuth();
@@ -43,6 +45,7 @@ function App() {
               <Route path="/tournaments" element={<TournamentsPage />} />
               <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
               <Route path="/games" element={<GamesPage />} />
+              <Route path="/games/:id" element={<GameViewPage />} />
               <Route path="/players" element={<PlayersPage />} />
               <Route path="/players/:id" element={<PlayerDetailPage />} />
 
@@ -50,6 +53,7 @@ function App() {
               <Route path="/admin/login" element={<LoginPage />} />
               <Route path="/admin/tournaments" element={<AdminRoute><ManageTournamentsPage /></AdminRoute>} />
               <Route path="/admin/games" element={<AdminRoute><ScoreGamesPage /></AdminRoute>} />
+              <Route path="/admin/games/:id" element={<AdminRoute><GamePlayPage /></AdminRoute>} />
               <Route path="/admin/players" element={<AdminRoute><ManagePlayersPage /></AdminRoute>} />
               <Route path="/admin/settings" element={<AdminRoute><AdminSettingsPage /></AdminRoute>} />
 

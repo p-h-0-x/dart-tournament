@@ -13,7 +13,7 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { auth, db } from './firebase';
-import type { Player, Game, Tournament } from '../models/types';
+import type { Player, Game, Tournament, LiveGameState, GameResult } from '../models/types';
 
 async function requireAdmin(): Promise<void> {
   const user = auth.currentUser;
@@ -72,6 +72,54 @@ export function onGamesChange(cb: (games: Game[]) => void): Unsubscribe {
   return onSnapshot(query(gamesCol(), orderBy('createdAt', 'desc')), (snap) => {
     cb(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Game)));
   });
+}
+
+export function onGameChange(id: string, cb: (game: Game | null) => void): Unsubscribe {
+  return onSnapshot(doc(db, 'games', id), (snap) => {
+    if (!snap.exists()) return cb(null);
+    cb({ id: snap.id, ...snap.data() } as Game);
+  });
+}
+
+export async function updateGameLiveState(id: string, liveState: LiveGameState): Promise<void> {
+  await requireAdmin();
+  await updateDoc(doc(db, 'games', id), { liveState });
+}
+
+export async function completeGame(id: string, results: GameResult[]): Promise<void> {
+  await requireAdmin();
+  await updateDoc(doc(db, 'games', id), {
+    results,
+    status: 'completed',
+    completedAt: Date.now(),
+  });
+}
+
+export async function completeGameAndAdvanceTournament(
+  gameId: string,
+  results: GameResult[],
+  tournamentId: string,
+  matchUpdater: (matches: Tournament['matches']) => Tournament['matches'],
+): Promise<void> {
+  await requireAdmin();
+  const batch = writeBatch(db);
+
+  // Complete the game
+  batch.update(doc(db, 'games', gameId), {
+    results,
+    status: 'completed',
+    completedAt: Date.now(),
+  });
+
+  // Get current tournament to update matches
+  const tournamentSnap = await getDoc(doc(db, 'tournaments', tournamentId));
+  if (tournamentSnap.exists()) {
+    const tournament = tournamentSnap.data() as Omit<Tournament, 'id'>;
+    const updatedMatches = matchUpdater(tournament.matches);
+    batch.update(doc(db, 'tournaments', tournamentId), { matches: updatedMatches });
+  }
+
+  await batch.commit();
 }
 
 // ---- Tournaments ----

@@ -1,12 +1,16 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
-import { addTournament, updateTournament, deleteTournament } from '../../services/database';
+import { addTournament, updateTournament, deleteTournament, addGame } from '../../services/database';
 import { addMatchToRound, setFlexibleMatchWinner, isRoundComplete, getTotalRounds, getEliminatedPlayerIds } from '../../engines/tournament';
 import { GAME_MODE_LABELS, type GameMode, type TournamentStatus, type Tournament, type TournamentMatch, type Player } from '../../models/types';
+import { initClassicState } from '../../engines/classic';
+import { initKillerState } from '../../engines/killer';
+import { initClockState } from '../../engines/clock';
 
 export default function ManageTournamentsPage() {
   const { players, tournaments, getPlayer, loading } = useData();
+  const navigate = useNavigate();
   const [showCreate, setShowCreate] = useState(false);
 
   if (loading) {
@@ -36,7 +40,7 @@ export default function ManageTournamentsPage() {
 
       <div style={{ display: 'grid', gap: '1rem' }}>
         {tournaments.map((t) => (
-          <TournamentCard key={t.id} tournament={t} allPlayers={players} getPlayer={getPlayer} />
+          <TournamentCard key={t.id} tournament={t} allPlayers={players} getPlayer={getPlayer} navigate={navigate} />
         ))}
       </div>
     </div>
@@ -129,7 +133,7 @@ function CreateTournamentForm({ players, onClose }: { players: { id: string; nam
   );
 }
 
-function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: Tournament; allPlayers: Player[]; getPlayer: (id: string) => Player | undefined }) {
+function TournamentCard({ tournament: t, allPlayers, getPlayer, navigate }: { tournament: Tournament; allPlayers: Player[]; getPlayer: (id: string) => Player | undefined; navigate: ReturnType<typeof useNavigate> }) {
   const [saving, setSaving] = useState(false);
   const [matchSelection, setMatchSelection] = useState<string[]>([]);
   const [showMatchUI, setShowMatchUI] = useState(false);
@@ -227,6 +231,49 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
     try {
       const updatedMatches = setFlexibleMatchWinner(t.matches ?? [], round, matchIndex, winnerId);
       await updateTournament(t.id, { matches: updatedMatches });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // --- Launch game ---
+  const launchGame = async (match: TournamentMatch) => {
+    if (match.playerIds.length < 2 || saving) return;
+    setSaving(true);
+    try {
+      // Create initial liveState based on game mode
+      let liveState;
+      if (t.gameMode === 'classic') {
+        liveState = initClassicState(match.playerIds);
+      } else if (t.gameMode === 'killer') {
+        liveState = initKillerState(match.playerIds);
+      } else if (t.gameMode === 'clock') {
+        liveState = initClockState(match.playerIds);
+      } else {
+        return; // 301/501 not supported yet
+      }
+
+      const gameId = await addGame({
+        mode: t.gameMode,
+        tournamentId: t.id,
+        tournamentRound: match.round,
+        tournamentMatchIndex: match.matchIndex,
+        playerIds: match.playerIds,
+        results: [],
+        status: 'in_progress',
+        liveState,
+        createdAt: Date.now(),
+      });
+
+      // Update tournament match with gameId and status
+      const updatedMatches = (t.matches ?? []).map((m: TournamentMatch) =>
+        m.round === match.round && m.matchIndex === match.matchIndex
+          ? { ...m, gameId, status: 'in_progress' as const }
+          : m,
+      );
+      await updateTournament(t.id, { matches: updatedMatches });
+
+      navigate(`/admin/games/${gameId}`);
     } finally {
       setSaving(false);
     }
@@ -341,11 +388,11 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
         </div>
       )}
 
-      {/* Pending matches - select winners */}
+      {/* Pending matches - select winners or launch game */}
       {t.status === 'in_progress' && pendingMatches.length > 0 && (
         <div className="mt-4">
           <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem' }}>
-            Round {totalRounds} - Select Winners
+            Round {totalRounds} - Matches
           </h4>
           {pendingMatches.map((match: TournamentMatch) => (
             <div
@@ -353,21 +400,42 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer }: { tournament: 
               style={{
                 display: 'flex', alignItems: 'center', gap: '0.75rem',
                 padding: '0.5rem 0', borderBottom: '1px solid var(--border)',
+                flexWrap: 'wrap',
               }}
             >
               <span className="text-sm text-muted" style={{ minWidth: '80px' }}>
                 Match {match.matchIndex + 1}
               </span>
-              {match.playerIds.map((pid: string) => (
-                <button
-                  key={pid}
-                  className="btn btn-outline btn-sm"
-                  onClick={() => selectWinner(match.round, match.matchIndex, pid)}
-                  disabled={saving}
-                >
-                  {getPlayer(pid)?.name ?? '?'}
-                </button>
-              ))}
+              <span style={{ fontSize: '0.85rem' }}>
+                {match.playerIds.map((pid: string) => getPlayer(pid)?.name ?? '?').join(' vs ')}
+              </span>
+              <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+                {match.gameId ? (
+                  <Link to={`/admin/games/${match.gameId}`} className="btn btn-primary btn-sm">
+                    Resume Game
+                  </Link>
+                ) : (
+                  <button
+                    className="btn btn-success btn-sm"
+                    onClick={() => launchGame(match)}
+                    disabled={saving}
+                  >
+                    Launch Game
+                  </button>
+                )}
+                {/* Manual winner selection (fallback/override) */}
+                {!match.gameId && match.playerIds.map((pid: string) => (
+                  <button
+                    key={pid}
+                    className="btn btn-outline btn-sm"
+                    onClick={() => selectWinner(match.round, match.matchIndex, pid)}
+                    disabled={saving}
+                    title={`Set ${getPlayer(pid)?.name ?? '?'} as winner`}
+                  >
+                    {getPlayer(pid)?.name ?? '?'}
+                  </button>
+                ))}
+              </div>
             </div>
           ))}
         </div>
