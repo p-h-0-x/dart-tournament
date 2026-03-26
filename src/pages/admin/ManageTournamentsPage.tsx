@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
-import { addTournament, updateTournament, deleteTournament, addGame } from '../../services/database';
+import { addTournament, updateTournament, deleteTournament, addGame, addPlayer } from '../../services/database';
 import { addMatchToRound, setFlexibleMatchWinner, isRoundComplete, getTotalRounds, getEliminatedPlayerIds } from '../../engines/tournament';
 import { GAME_MODE_LABELS, type GameMode, type TournamentStatus, type Tournament, type TournamentMatch, type Player } from '../../models/types';
 import { initClassicState } from '../../engines/classic';
@@ -53,11 +53,33 @@ function CreateTournamentForm({ players, onClose }: { players: { id: string; nam
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const [newPlayerName, setNewPlayerName] = useState('');
+  const [addingPlayer, setAddingPlayer] = useState(false);
 
   const togglePlayer = (id: string) => {
     setSelectedPlayers((prev) =>
       prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
     );
+  };
+
+  const handleAddPlayer = async () => {
+    const trimmed = newPlayerName.trim();
+    if (!trimmed || addingPlayer) return;
+    if (players.some((p) => p.name.toLowerCase() === trimmed.toLowerCase())) {
+      setError(`Player "${trimmed}" already exists`);
+      return;
+    }
+    setAddingPlayer(true);
+    setError('');
+    try {
+      const player = await addPlayer(trimmed);
+      setSelectedPlayers((prev) => [...prev, player.id]);
+      setNewPlayerName('');
+    } catch {
+      setError('Failed to create player');
+    } finally {
+      setAddingPlayer(false);
+    }
   };
 
   const handleCreate = async () => {
@@ -117,6 +139,23 @@ function CreateTournamentForm({ players, onClose }: { players: { id: string; nam
                 {p.name}
               </label>
             ))}
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+            <input
+              className="form-input"
+              style={{ flex: 1 }}
+              value={newPlayerName}
+              onChange={(e) => setNewPlayerName(e.target.value)}
+              placeholder="New player name"
+              onKeyDown={(e) => e.key === 'Enter' && handleAddPlayer()}
+            />
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={handleAddPlayer}
+              disabled={addingPlayer || !newPlayerName.trim()}
+            >
+              {addingPlayer ? '...' : '+ Add'}
+            </button>
           </div>
         </div>
 
