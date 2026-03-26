@@ -22,6 +22,9 @@ export default function Sidebar() {
           <NavLink to="/tournaments" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
             <span>🏆</span> Tournaments
           </NavLink>
+          <NavLink to="/high-scores" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            <span>⭐</span> High Scores
+          </NavLink>
           <NavLink to="/games" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
             <span>🎮</span> Games
           </NavLink>

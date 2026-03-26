@@ -10,6 +10,7 @@ import TournamentDetailPage from './pages/user/TournamentDetailPage';
 import GamesPage from './pages/user/GamesPage';
 import PlayersPage from './pages/user/PlayersPage';
 import PlayerDetailPage from './pages/user/PlayerDetailPage';
+import HighScoresPage from './pages/user/HighScoresPage';
 
 // Admin pages
 import LoginPage from './pages/admin/LoginPage';
@@ -44,6 +45,7 @@ function App() {
               <Route path="/" element={<LeaderboardPage />} />
               <Route path="/tournaments" element={<TournamentsPage />} />
               <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
+              <Route path="/high-scores" element={<HighScoresPage />} />
               <Route path="/games" element={<GamesPage />} />
               <Route path="/games/:id" element={<GameViewPage />} />
               <Route path="/players" element={<PlayersPage />} />

@@ -48,6 +48,10 @@ export default function MobileNav() {
           <span className="mobile-nav-icon">🏆</span>
           Tourneys
         </NavLink>
+        <NavLink to="/high-scores" className={({ isActive }) => `mobile-nav-item${isActive ? ' active' : ''}`}>
+          <span className="mobile-nav-icon">⭐</span>
+          Scores
+        </NavLink>
         <NavLink to="/games" className={({ isActive }) => `mobile-nav-item${isActive ? ' active' : ''}`}>
           <span className="mobile-nav-icon">🎮</span>
           Games
