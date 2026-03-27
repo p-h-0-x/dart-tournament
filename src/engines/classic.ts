@@ -4,12 +4,22 @@ import { checkContract } from './contracts';
 const SIMPLE_NUMBER_CONTRACTS = new Set(['20', '19', '18', '17', '16', '15', '14']);
 
 /**
- * Check if all darts hit the target number (for checkpoint bonus on simple contracts).
+ * Check if all darts meet the bonus condition for a contract.
+ * - Simple number contracts (20-14): all darts must hit the target number
+ * - Double contract: all darts must be doubles
+ * - Triple contract: all darts must be triples
  */
 function allDartsOnTarget(darts: StoredDart[], contractId: string): boolean {
+  if (darts.length === 0) return false;
+  if (contractId === 'double') {
+    return darts.every((d) => d.modifier === 'double');
+  }
+  if (contractId === 'triple') {
+    return darts.every((d) => d.modifier === 'triple');
+  }
   if (!SIMPLE_NUMBER_CONTRACTS.has(contractId)) return false;
   const target = parseInt(contractId);
-  return darts.length > 0 && darts.every((d) => d.number === target);
+  return darts.every((d) => d.number === target);
 }
 
 /**
