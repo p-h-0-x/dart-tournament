@@ -177,8 +177,8 @@ export interface CheckpointReward {
   description: string;
   /** For bonus_dart / free_darts: number of extra darts granted */
   extraDarts?: number;
-  /** 'all_darts' = all darts must hit the target number (simple contracts), 'contract_hit' = standard contract hit */
-  trigger: 'all_darts' | 'contract_hit';
+  /** 'all_darts' = all darts must hit the target number, 'contract_hit' = standard hit, 'first_dart_t19' = first dart is triple 19 */
+  trigger: 'all_darts' | 'contract_hit' | 'first_dart_t19';
 }
 
 export const CHECKPOINT_REWARDS: CheckpointReward[] = [
@@ -194,7 +194,7 @@ export const CHECKPOINT_REWARDS: CheckpointReward[] = [
   { contractId: '16',     type: 'external',    description: 'Just 1 Demi for free',           trigger: 'all_darts' },
   { contractId: 'triple', type: 'external',    description: 'Just 1 Pinte for free',          trigger: 'contract_hit' },
   { contractId: '15',     type: 'bonus_dart',  description: '+1 Bonus Dart',  extraDarts: 1,  trigger: 'all_darts' },
-  { contractId: '57',     type: 'external',    description: '1 Cocktail free',                trigger: 'contract_hit' },
+  { contractId: '57',     type: 'external',    description: '1 Cocktail free',                trigger: 'first_dart_t19' },
   { contractId: '14',     type: 'x2_score',    description: 'X2 Score Contract',              trigger: 'all_darts' },
   { contractId: 'bull',   type: 'external',    description: '30 Casino Coins + 2 Cocktails',  trigger: 'contract_hit' },
 ];

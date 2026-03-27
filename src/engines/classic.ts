@@ -78,9 +78,14 @@ export function submitClassicRound(
     let x2Applied = false;
 
     if (isCheckpoint && reward && result.hit) {
-      const bonusTriggered = reward.trigger === 'contract_hit'
-        ? true
-        : allDartsOnTarget(storedDarts, contractId);
+      let bonusTriggered: boolean;
+      if (reward.trigger === 'contract_hit') {
+        bonusTriggered = true;
+      } else if (reward.trigger === 'first_dart_t19') {
+        bonusTriggered = storedDarts.length > 0 && storedDarts[0].number === 19 && storedDarts[0].modifier === 'triple';
+      } else {
+        bonusTriggered = allDartsOnTarget(storedDarts, contractId);
+      }
 
       if (bonusTriggered) {
         bonusEarned = reward.description;

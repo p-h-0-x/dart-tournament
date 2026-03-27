@@ -120,6 +120,9 @@ export default function ClassicGameBoard({
               {currentReward.trigger === 'all_darts' && (
                 <span style={{ color: 'var(--text-muted)' }}> (all darts on target)</span>
               )}
+              {currentReward.trigger === 'first_dart_t19' && (
+                <span style={{ color: 'var(--text-muted)' }}> (first dart T19)</span>
+              )}
             </div>
           )}
         </div>
