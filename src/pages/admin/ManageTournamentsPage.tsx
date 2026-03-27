@@ -55,6 +55,7 @@ function CreateTournamentForm({ players, onClose }: { players: { id: string; nam
   const [error, setError] = useState('');
   const [newPlayerName, setNewPlayerName] = useState('');
   const [addingPlayer, setAddingPlayer] = useState(false);
+  const [checkpointSociety, setCheckpointSociety] = useState(false);
 
   const togglePlayer = (id: string) => {
     setSelectedPlayers((prev) =>
@@ -92,6 +93,7 @@ function CreateTournamentForm({ players, onClose }: { players: { id: string; nam
       await addTournament({
         name: name.trim(),
         gameMode,
+        ...(checkpointSociety && gameMode === 'classic' ? { checkpointSociety: true } : {}),
         playerIds: [...selectedPlayers],
         activePlayerIds: [...selectedPlayers],
         matches: [],
@@ -125,6 +127,22 @@ function CreateTournamentForm({ players, onClose }: { players: { id: string; nam
             ))}
           </select>
         </div>
+
+        {gameMode === 'classic' && (
+          <div className="form-group">
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={checkpointSociety}
+                onChange={(e) => setCheckpointSociety(e.target.checked)}
+              />
+              <span>Checkpoint Society Mode</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                (in-game bonuses + drink rewards)
+              </span>
+            </label>
+          </div>
+        )}
 
         <div className="form-group">
           <label className="form-label">Players ({selectedPlayers.length} selected, min 2)</label>
@@ -286,7 +304,7 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer, navigate }: { to
       // Create initial liveState based on game mode
       let liveState;
       if (t.gameMode === 'classic') {
-        liveState = initClassicState(match.playerIds);
+        liveState = initClassicState(match.playerIds, t.checkpointSociety);
       } else if (t.gameMode === 'killer') {
         liveState = initKillerState(match.playerIds);
       } else if (t.gameMode === 'clock') {

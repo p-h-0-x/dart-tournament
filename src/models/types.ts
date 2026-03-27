@@ -99,6 +99,7 @@ export interface Tournament {
   id: string;
   name: string;
   gameMode: GameMode;
+  checkpointSociety?: boolean;
   playerIds: string[];       // all players who ever participated (for stats)
   activePlayerIds: string[]; // current player pool (can be modified mid-tournament)
   matches: TournamentMatch[];
@@ -148,6 +149,8 @@ export interface ClassicPlayerRound {
   score: number;
   success: boolean;
   capitalAfter: number;
+  bonusEarned?: string;  // checkpoint reward description if earned
+  x2Applied?: boolean;   // true if X2 was applied to this round's score
 }
 
 export interface ClassicRound {
@@ -161,7 +164,40 @@ export interface ClassicLiveState {
   capitals: Record<string, number>;              // playerId -> current capital
   rounds: ClassicRound[];                        // completed rounds
   pendingDarts: Record<string, StoredDart[]>;    // per-player darts for current round (before submit)
+  checkpointSociety?: boolean;                   // optional Checkpoint Society bonus mode
+  bonusDarts?: Record<string, number>;           // playerId -> accumulated bonus darts available
 }
+
+// --- Checkpoint Society Rewards ---
+export type CheckpointRewardType = 'x2_score' | 'bonus_dart' | 'free_darts' | 'external';
+
+export interface CheckpointReward {
+  contractId: string;
+  type: CheckpointRewardType;
+  description: string;
+  /** For bonus_dart / free_darts: number of extra darts granted */
+  extraDarts?: number;
+  /** 'all_darts' = all darts must hit the target number (simple contracts), 'contract_hit' = standard contract hit */
+  trigger: 'all_darts' | 'contract_hit';
+}
+
+export const CHECKPOINT_REWARDS: CheckpointReward[] = [
+  // capital: no reward
+  { contractId: '20',     type: 'external',    description: '1 Roll for a shot for free',     trigger: 'all_darts' },
+  { contractId: 'side',   type: 'external',    description: 'Just 1 shot for free',           trigger: 'contract_hit' },
+  { contractId: '19',     type: 'bonus_dart',  description: '+1 Bonus Dart',  extraDarts: 1,  trigger: 'all_darts' },
+  { contractId: '3row',   type: 'x2_score',    description: 'X2 Score Contract',              trigger: 'contract_hit' },
+  { contractId: '18',     type: 'external',    description: '2 Rolls for a shot for free',    trigger: 'all_darts' },
+  { contractId: 'color',  type: 'external',    description: 'Just 1 galopin for free',        trigger: 'contract_hit' },
+  { contractId: '17',     type: 'external',    description: '+1 Joker Retry',                 trigger: 'all_darts' },
+  { contractId: 'double', type: 'free_darts',  description: '+3 Free Darts',  extraDarts: 3,  trigger: 'contract_hit' },
+  { contractId: '16',     type: 'external',    description: 'Just 1 Demi for free',           trigger: 'all_darts' },
+  { contractId: 'triple', type: 'external',    description: 'Just 1 Pinte for free',          trigger: 'contract_hit' },
+  { contractId: '15',     type: 'bonus_dart',  description: '+1 Bonus Dart',  extraDarts: 1,  trigger: 'all_darts' },
+  { contractId: '57',     type: 'external',    description: '1 Cocktail free',                trigger: 'contract_hit' },
+  { contractId: '14',     type: 'x2_score',    description: 'X2 Score Contract',              trigger: 'all_darts' },
+  { contractId: 'bull',   type: 'external',    description: '30 Casino Coins + 2 Cocktails',  trigger: 'contract_hit' },
+];
 
 // Killer: lives-based elimination game
 export interface KillerTurnSnapshot {
