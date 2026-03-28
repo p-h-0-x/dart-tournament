@@ -196,7 +196,7 @@ export const CHECKPOINT_REWARDS: CheckpointReward[] = [
   { contractId: '15',     type: 'bonus_dart',  description: '+1 Bonus Dart',  extraDarts: 1,  trigger: 'all_darts' },
   { contractId: '57',     type: 'external',    description: '1 Cocktail free',                trigger: 'first_dart_t19' },
   { contractId: '14',     type: 'x2_score',    description: 'X2 Score Contract',              trigger: 'all_darts' },
-  { contractId: 'bull',   type: 'external',    description: '30 Casino Coins + 2 Cocktails',  trigger: 'contract_hit' },
+  { contractId: 'bull',   type: 'external',    description: '30 Casino Coins + 2 Cocktails',  trigger: 'all_darts' },
 ];
 
 // Killer: lives-based elimination game

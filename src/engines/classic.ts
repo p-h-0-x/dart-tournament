@@ -8,6 +8,7 @@ const SIMPLE_NUMBER_CONTRACTS = new Set(['20', '19', '18', '17', '16', '15', '14
  * - Simple number contracts (20-14): all darts must hit the target number
  * - Double contract: all darts must be doubles
  * - Triple contract: all darts must be triples
+ * - Bull contract: all darts must hit bull (number 25)
  */
 function allDartsOnTarget(darts: StoredDart[], contractId: string): boolean {
   if (darts.length === 0) return false;
@@ -16,6 +17,9 @@ function allDartsOnTarget(darts: StoredDart[], contractId: string): boolean {
   }
   if (contractId === 'triple') {
     return darts.every((d) => d.modifier === 'triple');
+  }
+  if (contractId === 'bull') {
+    return darts.every((d) => d.number === 25);
   }
   if (!SIMPLE_NUMBER_CONTRACTS.has(contractId)) return false;
   const target = parseInt(contractId);
