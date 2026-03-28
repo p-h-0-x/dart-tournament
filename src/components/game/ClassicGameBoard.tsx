@@ -52,9 +52,9 @@ export default function ClassicGameBoard({
     ? CHECKPOINT_REWARDS.find((r) => r.contractId === contractId)
     : undefined;
 
-  // Detect new bonus earned from last submitted round and show popup
+  // Detect new bonus earned from last submitted round and show popup (admin only, in-progress games)
   useEffect(() => {
-    if (!isCheckpoint || liveState.rounds.length === 0) return;
+    if (!isCheckpoint || !isAdmin || isComplete || liveState.rounds.length === 0) return;
     const lastRound = liveState.rounds[liveState.rounds.length - 1];
     for (const pid of playerIds) {
       const pr = lastRound.players[pid];
