@@ -7,6 +7,8 @@ import { GAME_MODE_LABELS } from '../../models/types';
 import { submitClassicRound, undoClassicRound, isClassicComplete, getClassicResults } from '../../engines/classic';
 import { isKillerGameOver, getKillerWinner } from '../../engines/killer';
 import { determineClockWinner } from '../../engines/clock';
+import { simulateClassicGame, simulateKillerGame, simulateClockGame } from '../../engines/simulate';
+import { isDevMode } from './AdminSettingsPage';
 import ClassicGameBoard from '../../components/game/ClassicGameBoard';
 import KillerGameBoard from '../../components/game/KillerGameBoard';
 import ClockGameBoard from '../../components/game/ClockGameBoard';
@@ -195,6 +197,49 @@ export default function GamePlayPage() {
     }
   };
 
+  // --- Simulate game (dev mode) ---
+  const handleSimulateGame = async () => {
+    if (!id || !game.liveState || saving) return;
+    setSaving(true);
+    try {
+      let finalState = game.liveState;
+      if (finalState.mode === 'classic') {
+        finalState = simulateClassicGame(finalState as ClassicLiveState, game.playerIds);
+        await updateGameLiveState(id, finalState);
+        const results = getClassicResults(finalState as ClassicLiveState, game.playerIds);
+        const winners = results.filter((r) => r.rank === 1);
+        await handleCompleteGame(results, winners.length === 1 ? winners[0].playerId : undefined);
+      } else if (finalState.mode === 'killer') {
+        finalState = simulateKillerGame(finalState as KillerLiveState);
+        await updateGameLiveState(id, finalState);
+        const winnerId = getKillerWinner((finalState as KillerLiveState).playerOrder, (finalState as KillerLiveState).eliminated);
+        const results = (finalState as KillerLiveState).playerOrder.map((pid) => ({
+          playerId: pid,
+          score: (finalState as KillerLiveState).lives[pid] ?? 0,
+          rank: pid === winnerId ? 1 : 2,
+        }));
+        if (winnerId) await handleCompleteGame(results, winnerId);
+      } else if (finalState.mode === 'clock') {
+        finalState = simulateClockGame(finalState as ClockLiveState);
+        await updateGameLiveState(id, finalState);
+        const cls = finalState as ClockLiveState;
+        const { winners, isTie } = determineClockWinner(cls.playerOrder, cls.positions, cls.finishOrder);
+        const results = cls.playerOrder.map((pid) => ({
+          playerId: pid,
+          score: cls.positions[pid] ?? 1,
+          rank: winners.includes(pid) ? 1 : 2,
+        }));
+        if (!isTie || !game.tournamentId) {
+          await handleCompleteGame(results, winners[0]);
+        }
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const showDevTools = isDevMode() && !isCompleted && game.liveState;
+
   return (
     <div>
       <div className="game-play-page__header">
@@ -208,6 +253,16 @@ export default function GamePlayPage() {
             {game.tournamentId && ' · Tournament Game'}
           </div>
         </div>
+        {showDevTools && (
+          <button
+            className="btn btn-outline btn-sm"
+            style={{ marginLeft: 'auto', borderColor: 'var(--warning)', color: 'var(--warning)' }}
+            onClick={handleSimulateGame}
+            disabled={saving}
+          >
+            {saving ? 'Simulating...' : 'Simulate Game'}
+          </button>
+        )}
       </div>
 
       {/* Completed: show results */}

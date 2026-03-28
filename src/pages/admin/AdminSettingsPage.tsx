@@ -2,12 +2,17 @@ import { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { resetAllData } from '../../services/database';
 
+export function isDevMode(): boolean {
+  return localStorage.getItem('dart-dev-mode') === 'true';
+}
+
 export default function AdminSettingsPage() {
   const { players, games, tournaments, loading } = useData();
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [resetting, setResetting] = useState(false);
   const [message, setMessage] = useState('');
+  const [devMode, setDevMode] = useState(isDevMode);
 
   const handleReset = async () => {
     if (confirmText !== 'RESET') return;
@@ -36,6 +41,25 @@ export default function AdminSettingsPage() {
       <div className="page-header">
         <h1>Admin Settings</h1>
         <p>Manage application data</p>
+      </div>
+
+      <div className="card mb-4">
+        <h2 className="card-title mb-4">Testing Mode</h2>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={devMode}
+            onChange={(e) => {
+              const val = e.target.checked;
+              setDevMode(val);
+              localStorage.setItem('dart-dev-mode', String(val));
+            }}
+          />
+          <span>Enable testing mode</span>
+        </label>
+        <p className="text-sm text-muted mt-2">
+          Adds a "Simulate Game" button on in-progress games that auto-plays to completion with random darts.
+        </p>
       </div>
 
       <div className="card">
