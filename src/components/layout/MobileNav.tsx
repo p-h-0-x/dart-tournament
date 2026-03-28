@@ -1,9 +1,11 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { useState } from 'react';
 
 export default function MobileNav() {
   const { isAdmin, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [showAdminMenu, setShowAdminMenu] = useState(false);
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
@@ -13,6 +15,9 @@ export default function MobileNav() {
       {showAdminMenu && (
         <div className="mobile-admin-overlay" onClick={() => setShowAdminMenu(false)}>
           <div className="mobile-admin-menu" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => { toggleTheme(); setShowAdminMenu(false); }} className="mobile-admin-link" style={{ border: 'none', background: 'none', width: '100%', textAlign: 'left', cursor: 'pointer' }}>
+              <span>{theme === 'dark' ? '☀️' : '🌙'}</span> {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </button>
             {isAdmin ? (
               <>
                 <NavLink to="/admin/tournaments" className="mobile-admin-link" onClick={() => setShowAdminMenu(false)}>

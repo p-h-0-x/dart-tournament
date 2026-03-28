@@ -1,8 +1,10 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function Sidebar() {
   const { isAdmin, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <aside className="sidebar">
@@ -52,6 +54,9 @@ export default function Sidebar() {
         )}
 
         <div className="nav-section" style={{ marginTop: 'auto' }}>
+          <button onClick={toggleTheme} className="nav-link w-full" style={{ border: 'none', background: 'none', textAlign: 'left' }}>
+            <span>{theme === 'dark' ? '☀️' : '🌙'}</span> {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+          </button>
           {isAdmin ? (
             <button onClick={logout} className="nav-link w-full" style={{ border: 'none', background: 'none', textAlign: 'left' }}>
               <span>🚪</span> Logout

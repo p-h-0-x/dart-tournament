@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import Layout from './components/layout/Layout';
+import { ThemeProvider } from './context/ThemeContext';
 
 // User pages
 import LeaderboardPage from './pages/user/LeaderboardPage';
@@ -36,6 +37,7 @@ function App() {
   const basename = import.meta.env.BASE_URL;
 
   return (
+    <ThemeProvider>
     <BrowserRouter basename={basename}>
       <AuthProvider>
         <DataProvider>
@@ -66,6 +68,7 @@ function App() {
         </DataProvider>
       </AuthProvider>
     </BrowserRouter>
+    </ThemeProvider>
   );
 }
 
