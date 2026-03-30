@@ -5,6 +5,7 @@ import {
   type ClassicLiveState,
   type KillerLiveState,
   type ClockLiveState,
+  type CricketLiveState,
   type StoredDart,
   type Player,
 } from '../../models/types';
@@ -216,6 +217,53 @@ function ClockHistory({ state, players }: { state: ClockLiveState; players: Play
 }
 
 // ---------------------------------------------------------------------------
+// Cricket
+// ---------------------------------------------------------------------------
+function CricketHistory({ state, players }: { state: CricketLiveState; players: Player[] }) {
+  const getName = (id: string) => players.find((p) => p.id === id)?.name ?? '?';
+
+  if (state.history.length === 0) {
+    return <p className="text-muted text-sm">No turns played yet.</p>;
+  }
+
+  return (
+    <div className="table-container">
+      <table className="turn-history__table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Player</th>
+            <th>Darts</th>
+            <th>Marks</th>
+            <th>Pts</th>
+          </tr>
+        </thead>
+        <tbody>
+          {state.history.map((turn, idx) => {
+            const marksStr = Object.entries(turn.marksGained)
+              .filter(([, v]) => v > 0)
+              .map(([t, v]) => `${t === '25' ? 'Bull' : t}+${v}`)
+              .join(', ');
+
+            return (
+              <tr key={idx}>
+                <td className="text-muted">{idx + 1}</td>
+                <td><span className="font-bold">{getName(turn.playerId)}</span></td>
+                <td className="turn-history__cell-darts">{formatDarts(turn.darts)}</td>
+                <td>{marksStr || '-'}</td>
+                <td style={{ color: turn.pointsScored > 0 ? 'var(--success)' : 'var(--text-muted)' }}>
+                  {turn.pointsScored > 0 ? `+${turn.pointsScored}` : '-'}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 export default function GameTurnHistory({ liveState, players, playerIds }: GameTurnHistoryProps) {
@@ -226,6 +274,7 @@ export default function GameTurnHistory({ liveState, players, playerIds }: GameT
   if (liveState.mode === 'classic') turnCount = liveState.rounds.length;
   else if (liveState.mode === 'killer') turnCount = liveState.history.length;
   else if (liveState.mode === 'clock') turnCount = liveState.history.length;
+  else if (liveState.mode === 'cricket') turnCount = liveState.history.length;
 
   if (turnCount === 0) return null;
 
@@ -249,6 +298,9 @@ export default function GameTurnHistory({ liveState, players, playerIds }: GameT
           )}
           {liveState.mode === 'clock' && (
             <ClockHistory state={liveState} players={players} />
+          )}
+          {liveState.mode === 'cricket' && (
+            <CricketHistory state={liveState} players={players} />
           )}
         </div>
       )}

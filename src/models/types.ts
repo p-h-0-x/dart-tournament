@@ -3,12 +3,13 @@
 // ============================================================
 
 // --- Game Modes ---
-export type GameMode = 'classic' | 'clock' | 'killer' | '301/501';
+export type GameMode = 'classic' | 'clock' | 'killer' | 'cricket' | '301/501';
 
 export const GAME_MODE_LABELS: Record<GameMode, string> = {
   classic: 'Classic Halve-It',
   clock: 'Clock',
   killer: 'Killer',
+  cricket: 'Cricket',
   '301/501': '301/501',
 };
 
@@ -241,7 +242,28 @@ export interface ClockLiveState {
   history: ClockTurnHistory[];                    // for undo
 }
 
-export type LiveGameState = ClassicLiveState | KillerLiveState | ClockLiveState;
+// Cricket: close numbers and score points
+export const CRICKET_NUMBERS = [20, 19, 18, 17, 16, 15, 25]; // 25 = Bull
+
+export interface CricketTurnHistory {
+  playerId: string;
+  darts: StoredDart[];
+  marksGained: Record<string, number>;  // target -> marks gained this turn
+  pointsScored: number;
+}
+
+export interface CricketLiveState {
+  mode: 'cricket';
+  currentPlayerIndex: number;
+  playerOrder: string[];
+  /** marks[playerId][target] = number of marks (0+, 3 = closed) */
+  marks: Record<string, Record<string, number>>;
+  /** points scored from hitting closed-for-opponent numbers */
+  scores: Record<string, number>;
+  history: CricketTurnHistory[];
+}
+
+export type LiveGameState = ClassicLiveState | KillerLiveState | ClockLiveState | CricketLiveState;
 
 // --- Leaderboard entry (computed) ---
 export interface LeaderboardEntry {

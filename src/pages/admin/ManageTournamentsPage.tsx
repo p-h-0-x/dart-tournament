@@ -7,6 +7,7 @@ import { GAME_MODE_LABELS, type GameMode, type TournamentStatus, type Tournament
 import { initClassicState } from '../../engines/classic';
 import { initKillerState } from '../../engines/killer';
 import { initClockState } from '../../engines/clock';
+import { initCricketState } from '../../engines/cricket';
 
 export default function ManageTournamentsPage() {
   const { players, tournaments, getPlayer, loading } = useData();
@@ -309,6 +310,8 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer, navigate }: { to
         liveState = initKillerState(match.playerIds);
       } else if (t.gameMode === 'clock') {
         liveState = initClockState(match.playerIds);
+      } else if (t.gameMode === 'cricket') {
+        liveState = initCricketState(match.playerIds);
       } else {
         return; // 301/501 not supported yet
       }

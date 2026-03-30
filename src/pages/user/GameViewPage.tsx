@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { onGameChange } from '../../services/database';
-import type { Game, ClassicLiveState, KillerLiveState, ClockLiveState } from '../../models/types';
+import type { Game, ClassicLiveState, KillerLiveState, ClockLiveState, CricketLiveState } from '../../models/types';
 import { GAME_MODE_LABELS } from '../../models/types';
 import ClassicGameBoard from '../../components/game/ClassicGameBoard';
 import KillerGameBoard from '../../components/game/KillerGameBoard';
 import ClockGameBoard from '../../components/game/ClockGameBoard';
+import CricketGameBoard from '../../components/game/CricketGameBoard';
 import GameResultsBanner from '../../components/game/GameResultsBanner';
 import GameTurnHistory from '../../components/game/GameTurnHistory';
 
@@ -80,6 +81,16 @@ export default function GameViewPage() {
       {game.liveState?.mode === 'clock' && (
         <ClockGameBoard
           liveState={game.liveState as ClockLiveState}
+          playerIds={game.playerIds}
+          players={gamePlayers}
+          isAdmin={false}
+        />
+      )}
+
+      {/* Cricket mode: read-only view */}
+      {game.liveState?.mode === 'cricket' && (
+        <CricketGameBoard
+          liveState={game.liveState as CricketLiveState}
           playerIds={game.playerIds}
           players={gamePlayers}
           isAdmin={false}

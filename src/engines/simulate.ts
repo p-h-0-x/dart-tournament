@@ -1,7 +1,8 @@
-import { type StoredDart, type ClassicLiveState, type KillerLiveState, type ClockLiveState, createStoredDart, type DartModifier } from '../models/types';
+import { CRICKET_NUMBERS, type StoredDart, type ClassicLiveState, type KillerLiveState, type ClockLiveState, type CricketLiveState, createStoredDart, type DartModifier } from '../models/types';
 import { submitClassicRound, isClassicComplete } from './classic';
 import { processKillerTurn, applyKillerChanges, isKillerGameOver } from './killer';
 import { processClockDarts, CLOCK_MAX_TURNS, CLOCK_POSITION_FINISHED } from './clock';
+import { processCricketTurn, isCricketGameOver } from './cricket';
 
 const MODIFIERS: DartModifier[] = ['single', 'double', 'triple'];
 
@@ -192,6 +193,39 @@ export function simulateClockGame(state: ClockLiveState): ClockLiveState {
         finishOrderBefore: [...current.finishOrder],
       }],
     };
+  }
+  return current;
+}
+
+/**
+ * Simulate a full Cricket game to completion.
+ */
+export function simulateCricketGame(state: CricketLiveState): CricketLiveState {
+  let current = { ...state };
+  const order = current.playerOrder;
+
+  let safety = 0;
+  while (!isCricketGameOver(current) && safety < 500) {
+    safety++;
+    const pid = order[current.currentPlayerIndex];
+
+    // Generate darts biased toward cricket numbers
+    const darts: StoredDart[] = [];
+    for (let i = 0; i < 3; i++) {
+      if (Math.random() < 0.7) {
+        const target = CRICKET_NUMBERS[randomInt(0, CRICKET_NUMBERS.length - 1)];
+        if (target === 25) {
+          darts.push(createStoredDart(25, Math.random() < 0.5 ? 'single' : 'double'));
+        } else {
+          const mod = MODIFIERS[randomInt(0, 2)];
+          darts.push(createStoredDart(target, mod));
+        }
+      } else {
+        darts.push(createStoredDart(0));
+      }
+    }
+
+    current = processCricketTurn(current, pid, darts);
   }
   return current;
 }

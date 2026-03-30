@@ -2,16 +2,18 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { onGameChange, updateGameLiveState, completeGame, completeGameAndAdvanceTournament } from '../../services/database';
-import type { Game, ClassicLiveState, KillerLiveState, ClockLiveState, StoredDart, GameResult } from '../../models/types';
+import type { Game, ClassicLiveState, KillerLiveState, ClockLiveState, CricketLiveState, StoredDart, GameResult } from '../../models/types';
 import { GAME_MODE_LABELS } from '../../models/types';
 import { submitClassicRound, undoClassicRound, isClassicComplete, getClassicResults } from '../../engines/classic';
 import { isKillerGameOver, getKillerWinner } from '../../engines/killer';
 import { determineClockWinner } from '../../engines/clock';
-import { simulateClassicGame, simulateKillerGame, simulateClockGame } from '../../engines/simulate';
+import { isCricketGameOver, getCricketWinner, getCricketResults } from '../../engines/cricket';
+import { simulateClassicGame, simulateKillerGame, simulateClockGame, simulateCricketGame } from '../../engines/simulate';
 import { isDevMode } from './AdminSettingsPage';
 import ClassicGameBoard from '../../components/game/ClassicGameBoard';
 import KillerGameBoard from '../../components/game/KillerGameBoard';
 import ClockGameBoard from '../../components/game/ClockGameBoard';
+import CricketGameBoard from '../../components/game/CricketGameBoard';
 import GameResultsBanner from '../../components/game/GameResultsBanner';
 import GameTurnHistory from '../../components/game/GameTurnHistory';
 
@@ -167,6 +169,34 @@ export default function GamePlayPage() {
     }
   };
 
+  // --- Cricket mode handler ---
+  const handleCricketStateUpdate = async (newState: CricketLiveState) => {
+    if (!id) return;
+    setSaving(true);
+    try {
+      await updateGameLiveState(id, newState);
+      if (isCricketGameOver(newState)) {
+        const results = getCricketResults(newState);
+        const { winnerId, isTie } = getCricketWinner(newState);
+        if (!isTie || !game.tournamentId) {
+          await handleCompleteGame(results, winnerId ?? undefined);
+        }
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCricketUndoState = async (newState: CricketLiveState) => {
+    if (!id) return;
+    setSaving(true);
+    try {
+      await updateGameLiveState(id, newState);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handlePickWinner = async (winnerId: string) => {
     if (!game.liveState) return;
     let results: GameResult[] = [];
@@ -187,6 +217,8 @@ export default function GamePlayPage() {
         score: ls.lives[pid] ?? 0,
         rank: pid === winnerId ? 1 : 2,
       }));
+    } else if (game.liveState.mode === 'cricket') {
+      results = getCricketResults(game.liveState as CricketLiveState);
     }
     await handleCompleteGame(results, winnerId);
   };
@@ -232,6 +264,12 @@ export default function GamePlayPage() {
         if (!isTie || !game.tournamentId) {
           await handleCompleteGame(results, winners[0]);
         }
+      } else if (finalState.mode === 'cricket') {
+        finalState = simulateCricketGame(finalState as CricketLiveState);
+        await updateGameLiveState(id, finalState);
+        const results = getCricketResults(finalState as CricketLiveState);
+        const { winnerId } = getCricketWinner(finalState as CricketLiveState);
+        if (winnerId) await handleCompleteGame(results, winnerId);
       }
     } finally {
       setSaving(false);
@@ -342,6 +380,36 @@ export default function GamePlayPage() {
             return (
               <GameResultsBanner
                 results={results}
+                players={gamePlayers}
+                tournamentId={game.tournamentId}
+                isAdmin={true}
+                onPickWinner={handlePickWinner}
+                onBackToTournament={game.tournamentId ? handleBackToTournament : undefined}
+              />
+            );
+          })()}
+        </>
+      )}
+
+      {/* Cricket mode */}
+      {game.liveState?.mode === 'cricket' && (
+        <>
+          <CricketGameBoard
+            liveState={game.liveState as CricketLiveState}
+            playerIds={game.playerIds}
+            players={gamePlayers}
+            isAdmin={!isCompleted}
+            onUpdateState={handleCricketStateUpdate}
+            onUndoState={handleCricketUndoState}
+          />
+
+          {/* Tie resolution for cricket */}
+          {!isCompleted && isCricketGameOver(game.liveState as CricketLiveState) && (() => {
+            const { isTie } = getCricketWinner(game.liveState as CricketLiveState);
+            if (!isTie || !game.tournamentId) return null;
+            return (
+              <GameResultsBanner
+                results={getCricketResults(game.liveState as CricketLiveState)}
                 players={gamePlayers}
                 tournamentId={game.tournamentId}
                 isAdmin={true}

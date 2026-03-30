@@ -1139,6 +1139,56 @@ tr:hover td {
   color: var(--text-muted);
 }
 
+/* Cricket Game Board */
+.cricket-board__table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+.cricket-board__table th,
+.cricket-board__table td {
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.cricket-board__table th {
+  background: var(--bg-secondary);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+.cricket-board__active-player {
+  color: var(--accent);
+}
+.cricket-board__target {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+.cricket-board__mark {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.cricket-board__mark-symbol {
+  color: var(--text-muted);
+}
+.cricket-board__mark--closed {
+  color: var(--success);
+}
+.cricket-board__row--dead {
+  opacity: 0.4;
+}
+.cricket-board__score-row {
+  border-top: 2px solid var(--border);
+}
+.cricket-board__score {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--gold);
+}
+
 /* Game Results Banner */
 .game-results-banner {
   text-align: center;
