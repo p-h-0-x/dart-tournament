@@ -101,6 +101,8 @@ export interface Tournament {
   name: string;
   gameMode: GameMode;
   checkpointSociety?: boolean;
+  x01StartScore?: 301 | 501;
+  x01OutMode?: X01OutMode;
   playerIds: string[];       // all players who ever participated (for stats)
   activePlayerIds: string[]; // current player pool (can be modified mid-tournament)
   matches: TournamentMatch[];
@@ -263,7 +265,29 @@ export interface CricketLiveState {
   history: CricketTurnHistory[];
 }
 
-export type LiveGameState = ClassicLiveState | KillerLiveState | ClockLiveState | CricketLiveState;
+// X01 (301/501): countdown to zero
+export type X01OutMode = 'double' | 'straight';
+
+export interface X01TurnHistory {
+  playerId: string;
+  darts: StoredDart[];
+  scoreBefore: number;
+  scoreAfter: number;
+  bust: boolean;
+}
+
+export interface X01LiveState {
+  mode: '301/501';
+  startScore: 301 | 501;
+  outMode: X01OutMode;
+  currentPlayerIndex: number;
+  playerOrder: string[];
+  scores: Record<string, number>;        // playerId -> remaining score
+  finishOrder: string[];                  // playerIds in finish order
+  history: X01TurnHistory[];
+}
+
+export type LiveGameState = ClassicLiveState | KillerLiveState | ClockLiveState | CricketLiveState | X01LiveState;
 
 // --- Leaderboard entry (computed) ---
 export interface LeaderboardEntry {

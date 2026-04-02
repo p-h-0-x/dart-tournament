@@ -6,6 +6,7 @@ import {
   type KillerLiveState,
   type ClockLiveState,
   type CricketLiveState,
+  type X01LiveState,
   type StoredDart,
   type Player,
 } from '../../models/types';
@@ -264,6 +265,52 @@ function CricketHistory({ state, players }: { state: CricketLiveState; players: 
 }
 
 // ---------------------------------------------------------------------------
+// X01 (301/501)
+// ---------------------------------------------------------------------------
+function X01History({ state, players }: { state: X01LiveState; players: Player[] }) {
+  const getName = (id: string) => players.find((p) => p.id === id)?.name ?? '?';
+
+  if (state.history.length === 0) {
+    return <p className="text-muted text-sm">No turns played yet.</p>;
+  }
+
+  return (
+    <div className="table-container">
+      <table className="turn-history__table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Player</th>
+            <th>Darts</th>
+            <th>Score</th>
+            <th>Remaining</th>
+          </tr>
+        </thead>
+        <tbody>
+          {state.history.map((turn, idx) => {
+            const total = turn.darts.reduce((sum, d) => sum + d.score, 0);
+            return (
+              <tr key={idx}>
+                <td className="text-muted">{idx + 1}</td>
+                <td><span className="font-bold">{getName(turn.playerId)}</span></td>
+                <td className="turn-history__cell-darts">{formatDarts(turn.darts)}</td>
+                <td style={{ color: turn.bust ? 'var(--danger)' : 'var(--text)' }}>
+                  {turn.bust ? <span>BUST ({total})</span> : total}
+                </td>
+                <td>
+                  {turn.scoreBefore} &rarr; {turn.scoreAfter}
+                  {turn.scoreAfter === 0 && <span className="turn-history__finish-tag">OUT</span>}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 export default function GameTurnHistory({ liveState, players, playerIds }: GameTurnHistoryProps) {
@@ -275,6 +322,7 @@ export default function GameTurnHistory({ liveState, players, playerIds }: GameT
   else if (liveState.mode === 'killer') turnCount = liveState.history.length;
   else if (liveState.mode === 'clock') turnCount = liveState.history.length;
   else if (liveState.mode === 'cricket') turnCount = liveState.history.length;
+  else if (liveState.mode === '301/501') turnCount = liveState.history.length;
 
   if (turnCount === 0) return null;
 
@@ -301,6 +349,9 @@ export default function GameTurnHistory({ liveState, players, playerIds }: GameT
           )}
           {liveState.mode === 'cricket' && (
             <CricketHistory state={liveState} players={players} />
+          )}
+          {liveState.mode === '301/501' && (
+            <X01History state={liveState} players={players} />
           )}
         </div>
       )}

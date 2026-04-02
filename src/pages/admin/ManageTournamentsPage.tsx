@@ -3,11 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { addTournament, updateTournament, deleteTournament, addGame, addPlayer } from '../../services/database';
 import { addMatchToRound, setFlexibleMatchWinner, isRoundComplete, getTotalRounds, getEliminatedPlayerIds } from '../../engines/tournament';
-import { GAME_MODE_LABELS, type GameMode, type TournamentStatus, type Tournament, type TournamentMatch, type Player } from '../../models/types';
+import { GAME_MODE_LABELS, type GameMode, type TournamentStatus, type Tournament, type TournamentMatch, type Player, type X01OutMode } from '../../models/types';
 import { initClassicState } from '../../engines/classic';
 import { initKillerState } from '../../engines/killer';
 import { initClockState } from '../../engines/clock';
 import { initCricketState } from '../../engines/cricket';
+import { initX01State } from '../../engines/x01';
 
 export default function ManageTournamentsPage() {
   const { players, tournaments, getPlayer, loading } = useData();
@@ -57,6 +58,8 @@ function CreateTournamentForm({ players, onClose }: { players: { id: string; nam
   const [newPlayerName, setNewPlayerName] = useState('');
   const [addingPlayer, setAddingPlayer] = useState(false);
   const [checkpointSociety, setCheckpointSociety] = useState(false);
+  const [x01StartScore, setX01StartScore] = useState<301 | 501>(501);
+  const [x01OutMode, setX01OutMode] = useState<X01OutMode>('double');
 
   const togglePlayer = (id: string) => {
     setSelectedPlayers((prev) =>
@@ -95,6 +98,7 @@ function CreateTournamentForm({ players, onClose }: { players: { id: string; nam
         name: name.trim(),
         gameMode,
         ...(checkpointSociety && gameMode === 'classic' ? { checkpointSociety: true } : {}),
+        ...(gameMode === '301/501' ? { x01StartScore, x01OutMode } : {}),
         playerIds: [...selectedPlayers],
         activePlayerIds: [...selectedPlayers],
         matches: [],
@@ -143,6 +147,25 @@ function CreateTournamentForm({ players, onClose }: { players: { id: string; nam
               </span>
             </label>
           </div>
+        )}
+
+        {gameMode === '301/501' && (
+          <>
+            <div className="form-group">
+              <label className="form-label">Start Score</label>
+              <select className="form-select" value={x01StartScore} onChange={(e) => setX01StartScore(Number(e.target.value) as 301 | 501)}>
+                <option value={301}>301</option>
+                <option value={501}>501</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Out Mode</label>
+              <select className="form-select" value={x01OutMode} onChange={(e) => setX01OutMode(e.target.value as X01OutMode)}>
+                <option value="double">Double Out</option>
+                <option value="straight">Straight Out</option>
+              </select>
+            </div>
+          </>
         )}
 
         <div className="form-group">
@@ -312,8 +335,10 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer, navigate }: { to
         liveState = initClockState(match.playerIds);
       } else if (t.gameMode === 'cricket') {
         liveState = initCricketState(match.playerIds);
+      } else if (t.gameMode === '301/501') {
+        liveState = initX01State(match.playerIds, t.x01StartScore ?? 501, t.x01OutMode ?? 'double');
       } else {
-        return; // 301/501 not supported yet
+        return;
       }
 
       const gameId = await addGame({

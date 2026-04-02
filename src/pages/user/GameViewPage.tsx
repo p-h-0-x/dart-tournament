@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { onGameChange } from '../../services/database';
-import type { Game, ClassicLiveState, KillerLiveState, ClockLiveState, CricketLiveState } from '../../models/types';
+import type { Game, ClassicLiveState, KillerLiveState, ClockLiveState, CricketLiveState, X01LiveState } from '../../models/types';
 import { GAME_MODE_LABELS } from '../../models/types';
 import ClassicGameBoard from '../../components/game/ClassicGameBoard';
 import KillerGameBoard from '../../components/game/KillerGameBoard';
 import ClockGameBoard from '../../components/game/ClockGameBoard';
 import CricketGameBoard from '../../components/game/CricketGameBoard';
+import X01GameBoard from '../../components/game/X01GameBoard';
 import GameResultsBanner from '../../components/game/GameResultsBanner';
 import GameTurnHistory from '../../components/game/GameTurnHistory';
 
@@ -91,6 +92,16 @@ export default function GameViewPage() {
       {game.liveState?.mode === 'cricket' && (
         <CricketGameBoard
           liveState={game.liveState as CricketLiveState}
+          playerIds={game.playerIds}
+          players={gamePlayers}
+          isAdmin={false}
+        />
+      )}
+
+      {/* X01 (301/501) mode: read-only view */}
+      {game.liveState?.mode === '301/501' && (
+        <X01GameBoard
+          liveState={game.liveState as X01LiveState}
           playerIds={game.playerIds}
           players={gamePlayers}
           isAdmin={false}

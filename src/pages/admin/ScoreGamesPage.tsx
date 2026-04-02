@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { addGame, updateGame } from '../../services/database';
-import { GAME_MODE_LABELS, type GameMode, type GameResult, type Game, type Player } from '../../models/types';
+import { GAME_MODE_LABELS, type GameMode, type GameResult, type Game, type Player, type X01OutMode } from '../../models/types';
+import { initX01State } from '../../engines/x01';
 
 export default function ScoreGamesPage() {
   const { players, games, getPlayer, loading } = useData();
@@ -86,6 +87,8 @@ function CreateGameForm({ players, onClose }: { players: { id: string; name: str
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const [x01StartScore, setX01StartScore] = useState<301 | 501>(501);
+  const [x01OutMode, setX01OutMode] = useState<X01OutMode>('double');
 
   const togglePlayer = (id: string) => {
     setSelectedPlayers((prev) =>
@@ -98,12 +101,16 @@ function CreateGameForm({ players, onClose }: { players: { id: string; name: str
     setCreating(true);
     setError('');
     try {
+      const liveState = gameMode === '301/501'
+        ? initX01State(selectedPlayers, x01StartScore, x01OutMode)
+        : undefined;
       await addGame({
         mode: gameMode,
         playerIds: selectedPlayers,
         results: [],
         status: 'in_progress',
         createdAt: Date.now(),
+        ...(liveState ? { liveState } : {}),
       });
       onClose();
     } catch {
@@ -126,6 +133,25 @@ function CreateGameForm({ players, onClose }: { players: { id: string; name: str
             ))}
           </select>
         </div>
+
+        {gameMode === '301/501' && (
+          <>
+            <div className="form-group">
+              <label className="form-label">Start Score</label>
+              <select className="form-select" value={x01StartScore} onChange={(e) => setX01StartScore(Number(e.target.value) as 301 | 501)}>
+                <option value={301}>301</option>
+                <option value={501}>501</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Out Mode</label>
+              <select className="form-select" value={x01OutMode} onChange={(e) => setX01OutMode(e.target.value as X01OutMode)}>
+                <option value="double">Double Out</option>
+                <option value="straight">Straight Out</option>
+              </select>
+            </div>
+          </>
+        )}
 
         <div className="form-group">
           <label className="form-label">Players ({selectedPlayers.length} selected, min 2)</label>
