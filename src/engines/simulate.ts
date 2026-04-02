@@ -1,8 +1,9 @@
-import { CRICKET_NUMBERS, type StoredDart, type ClassicLiveState, type KillerLiveState, type ClockLiveState, type CricketLiveState, createStoredDart, type DartModifier } from '../models/types';
+import { CRICKET_NUMBERS, type StoredDart, type ClassicLiveState, type KillerLiveState, type ClockLiveState, type CricketLiveState, type X01LiveState, createStoredDart, type DartModifier } from '../models/types';
 import { submitClassicRound, isClassicComplete } from './classic';
 import { processKillerTurn, applyKillerChanges, isKillerGameOver } from './killer';
 import { processClockDarts, CLOCK_MAX_TURNS, CLOCK_POSITION_FINISHED } from './clock';
 import { processCricketTurn, isCricketGameOver } from './cricket';
+import { processX01Turn, isX01GameOver } from './x01';
 
 const MODIFIERS: DartModifier[] = ['single', 'double', 'triple'];
 
@@ -226,6 +227,62 @@ export function simulateCricketGame(state: CricketLiveState): CricketLiveState {
     }
 
     current = processCricketTurn(current, pid, darts);
+  }
+  return current;
+}
+
+/**
+ * Simulate a full X01 (301/501) game to completion.
+ */
+export function simulateX01Game(state: X01LiveState): X01LiveState {
+  let current = { ...state };
+  const order = current.playerOrder;
+
+  let safety = 0;
+  while (!isX01GameOver(current) && safety < 500) {
+    safety++;
+    const pid = order[current.currentPlayerIndex];
+    if (current.scores[pid] <= 0) {
+      // Skip finished players
+      current = { ...current, currentPlayerIndex: (current.currentPlayerIndex + 1) % order.length };
+      continue;
+    }
+
+    const remaining = current.scores[pid];
+    const darts: StoredDart[] = [];
+    let runningRemaining = remaining;
+
+    for (let i = 0; i < 3; i++) {
+      if (runningRemaining <= 0) break;
+
+      // Try to finish if possible
+      if (runningRemaining <= 40 && current.outMode === 'double' && runningRemaining % 2 === 0) {
+        const doubleTarget = runningRemaining / 2;
+        if (doubleTarget >= 1 && doubleTarget <= 20 && Math.random() < 0.3) {
+          darts.push(createStoredDart(doubleTarget, 'double'));
+          runningRemaining = 0;
+          continue;
+        }
+      }
+      if (current.outMode === 'straight' && runningRemaining <= 20 && Math.random() < 0.3) {
+        darts.push(createStoredDart(runningRemaining, 'single'));
+        runningRemaining = 0;
+        continue;
+      }
+
+      // Random scoring dart
+      const dart = randomDart();
+      const newRemaining = runningRemaining - dart.score;
+      if (newRemaining >= 0) {
+        runningRemaining = newRemaining;
+        darts.push(dart);
+      } else {
+        darts.push(createStoredDart(0)); // miss to avoid bust
+      }
+    }
+
+    if (darts.length === 0) darts.push(createStoredDart(0));
+    current = processX01Turn(current, pid, darts);
   }
   return current;
 }

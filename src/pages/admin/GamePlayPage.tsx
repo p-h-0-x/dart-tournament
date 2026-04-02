@@ -2,18 +2,20 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { onGameChange, updateGameLiveState, completeGame, completeGameAndAdvanceTournament } from '../../services/database';
-import type { Game, ClassicLiveState, KillerLiveState, ClockLiveState, CricketLiveState, StoredDart, GameResult } from '../../models/types';
+import type { Game, ClassicLiveState, KillerLiveState, ClockLiveState, CricketLiveState, X01LiveState, StoredDart, GameResult } from '../../models/types';
 import { GAME_MODE_LABELS } from '../../models/types';
 import { submitClassicRound, undoClassicRound, isClassicComplete, getClassicResults } from '../../engines/classic';
 import { isKillerGameOver, getKillerWinner } from '../../engines/killer';
 import { determineClockWinner } from '../../engines/clock';
 import { isCricketGameOver, getCricketWinner, getCricketResults } from '../../engines/cricket';
-import { simulateClassicGame, simulateKillerGame, simulateClockGame, simulateCricketGame } from '../../engines/simulate';
+import { isX01GameOver, getX01Results, getX01Winner } from '../../engines/x01';
+import { simulateClassicGame, simulateKillerGame, simulateClockGame, simulateCricketGame, simulateX01Game } from '../../engines/simulate';
 import { isDevMode } from './AdminSettingsPage';
 import ClassicGameBoard from '../../components/game/ClassicGameBoard';
 import KillerGameBoard from '../../components/game/KillerGameBoard';
 import ClockGameBoard from '../../components/game/ClockGameBoard';
 import CricketGameBoard from '../../components/game/CricketGameBoard';
+import X01GameBoard from '../../components/game/X01GameBoard';
 import GameResultsBanner from '../../components/game/GameResultsBanner';
 import GameTurnHistory from '../../components/game/GameTurnHistory';
 
@@ -197,6 +199,34 @@ export default function GamePlayPage() {
     }
   };
 
+  // --- X01 mode handler ---
+  const handleX01StateUpdate = async (newState: X01LiveState) => {
+    if (!id) return;
+    setSaving(true);
+    try {
+      await updateGameLiveState(id, newState);
+      if (isX01GameOver(newState)) {
+        const results = getX01Results(newState);
+        const { winnerId } = getX01Winner(newState);
+        if (winnerId) {
+          await handleCompleteGame(results, winnerId);
+        }
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleX01UndoState = async (newState: X01LiveState) => {
+    if (!id) return;
+    setSaving(true);
+    try {
+      await updateGameLiveState(id, newState);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handlePickWinner = async (winnerId: string) => {
     if (!game.liveState) return;
     let results: GameResult[] = [];
@@ -219,6 +249,8 @@ export default function GamePlayPage() {
       }));
     } else if (game.liveState.mode === 'cricket') {
       results = getCricketResults(game.liveState as CricketLiveState);
+    } else if (game.liveState.mode === '301/501') {
+      results = getX01Results(game.liveState as X01LiveState);
     }
     await handleCompleteGame(results, winnerId);
   };
@@ -269,6 +301,12 @@ export default function GamePlayPage() {
         await updateGameLiveState(id, finalState);
         const results = getCricketResults(finalState as CricketLiveState);
         const { winnerId } = getCricketWinner(finalState as CricketLiveState);
+        if (winnerId) await handleCompleteGame(results, winnerId);
+      } else if (finalState.mode === '301/501') {
+        finalState = simulateX01Game(finalState as X01LiveState);
+        await updateGameLiveState(id, finalState);
+        const results = getX01Results(finalState as X01LiveState);
+        const { winnerId } = getX01Winner(finalState as X01LiveState);
         if (winnerId) await handleCompleteGame(results, winnerId);
       }
     } finally {
@@ -419,6 +457,18 @@ export default function GamePlayPage() {
             );
           })()}
         </>
+      )}
+
+      {/* X01 (301/501) mode */}
+      {game.liveState?.mode === '301/501' && (
+        <X01GameBoard
+          liveState={game.liveState as X01LiveState}
+          playerIds={game.playerIds}
+          players={gamePlayers}
+          isAdmin={!isCompleted}
+          onUpdateState={handleX01StateUpdate}
+          onUndoState={handleX01UndoState}
+        />
       )}
 
       {/* Turn history */}
