@@ -320,8 +320,30 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer, navigate }: { to
     }
   };
 
+  // --- Launch game (X01 config modal) ---
+  const [launchingMatch, setLaunchingMatch] = useState<TournamentMatch | null>(null);
+  const [launchX01StartScore, setLaunchX01StartScore] = useState<301 | 501>(t.x01StartScore ?? 501);
+  const [launchX01OutMode, setLaunchX01OutMode] = useState<X01OutMode>(t.x01OutMode ?? 'double');
+
+  const handleLaunchClick = (match: TournamentMatch) => {
+    if (t.gameMode === '301/501') {
+      setLaunchX01StartScore(t.x01StartScore ?? 501);
+      setLaunchX01OutMode(t.x01OutMode ?? 'double');
+      setLaunchingMatch(match);
+    } else {
+      launchGame(match);
+    }
+  };
+
+  const handleConfirmX01Launch = () => {
+    if (launchingMatch) {
+      launchGame(launchingMatch, launchX01StartScore, launchX01OutMode);
+      setLaunchingMatch(null);
+    }
+  };
+
   // --- Launch game ---
-  const launchGame = async (match: TournamentMatch) => {
+  const launchGame = async (match: TournamentMatch, x01Start?: 301 | 501, x01Out?: X01OutMode) => {
     if (match.playerIds.length < 2 || saving) return;
     setSaving(true);
     try {
@@ -336,7 +358,7 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer, navigate }: { to
       } else if (t.gameMode === 'cricket') {
         liveState = initCricketState(match.playerIds);
       } else if (t.gameMode === '301/501') {
-        liveState = initX01State(match.playerIds, t.x01StartScore ?? 501, t.x01OutMode ?? 'double');
+        liveState = initX01State(match.playerIds, x01Start ?? t.x01StartScore ?? 501, x01Out ?? t.x01OutMode ?? 'double');
       } else {
         return;
       }
@@ -505,7 +527,7 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer, navigate }: { to
                 ) : (
                   <button
                     className="btn btn-success btn-sm"
-                    onClick={() => launchGame(match)}
+                    onClick={() => handleLaunchClick(match)}
                     disabled={saving}
                   >
                     Launch Game
@@ -656,6 +678,38 @@ function TournamentCard({ tournament: t, allPlayers, getPlayer, navigate }: { to
       {t.championId && (
         <div className="mt-4" style={{ color: 'var(--gold)', fontWeight: 600 }}>
           Champion: {getPlayer(t.championId)?.name ?? 'Unknown'}
+        </div>
+      )}
+
+      {/* X01 launch config modal */}
+      {launchingMatch && (
+        <div className="modal-overlay" onClick={() => setLaunchingMatch(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="modal-title">Launch 301/501 Game</h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
+              {launchingMatch.playerIds.map((pid: string) => getPlayer(pid)?.name ?? '?').join(' vs ')}
+            </p>
+            <div className="form-group">
+              <label className="form-label">Start Score</label>
+              <select className="form-select" value={launchX01StartScore} onChange={(e) => setLaunchX01StartScore(Number(e.target.value) as 301 | 501)}>
+                <option value={301}>301</option>
+                <option value={501}>501</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Out Mode</label>
+              <select className="form-select" value={launchX01OutMode} onChange={(e) => setLaunchX01OutMode(e.target.value as X01OutMode)}>
+                <option value="double">Double Out</option>
+                <option value="straight">Straight Out</option>
+              </select>
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => setLaunchingMatch(null)}>Cancel</button>
+              <button className="btn btn-success" onClick={handleConfirmX01Launch} disabled={saving}>
+                {saving ? 'Launching...' : 'Start Game'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
